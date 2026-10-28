@@ -2,6 +2,7 @@
 import { cargarOpenCV, cargarBanco, Reconocedor, MIN_DEBIL } from './vision.js';
 import { Seguidor, Rastreo } from './seguimiento.js';
 import { abrirVentana, ventanaAbierta } from './ventana.js';
+import { iniciarFondo, detenerFondo } from './fondo.js';
 import { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, areaPoligono, contiene, planoDe } from './geometria.js';
 
 const params = new URLSearchParams(location.search);
@@ -20,6 +21,7 @@ window.__app = estado; // para pruebas
 
 // ---------- carga ----------
 async function iniciar() {
+  iniciarFondo($('fondo'));
   if (DEMO) $('demo').hidden = false;
   if (DEBUG) $('debug').hidden = false;
   try {
@@ -104,6 +106,7 @@ function abrirArchivo(url, esVideo) {
 function empezar(el) {
   estado.fuente = el;
   $('inicio').hidden = true;
+  detenerFondo($('fondo'));
   $('mensaje').hidden = false;
   ajustarCanvas();
   if (!estado.bucle) { estado.bucle = true; requestAnimationFrame(cuadro); }

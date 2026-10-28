@@ -9,17 +9,35 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color:
   background: rgba(0, 0, 0, .7); padding: 10px 18px; border-radius: 999px; font-size: 1rem; pointer-events: none; }
 #debug { position: fixed; left: 8px; bottom: 8px; margin: 0; padding: 6px 8px; font: 12px/1.35 ui-monospace, monospace;
   background: rgba(0, 0, 0, .65); color: #b8f5c4; border-radius: 6px; pointer-events: none; white-space: pre-wrap; }
-#inicio { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; padding: 24px; text-align: center; background: var(--fondo); }
-#inicio h1 { font-size: 1.6rem; margin: 0; }
-#inicio p { max-width: 28rem; margin: 0; color: #c5d1c9; line-height: 1.45; }
+#inicio { position: fixed; inset: 0; overflow: hidden; display: grid; place-items: center; padding: 24px; text-align: center;
+  background: radial-gradient(120% 90% at 50% 0%, #2d1f5c 0%, #15233f 48%, #0c2a2a 100%); }
+#fondo { position: absolute; inset: 0; pointer-events: none; }
+.insecto { position: absolute; left: 0; top: 0; will-change: transform; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .35)); }
+.insecto svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.insecto .ala { transform-box: view-box; transform-origin: 50% 50%; animation: aleteo var(--aleteo, .35s) ease-in-out infinite alternate; }
+.insecto .ala.rapida { animation-duration: .09s; }
+.insecto .ala.der { animation-direction: alternate-reverse; }
+@keyframes aleteo { from { transform: scaleX(1); } to { transform: scaleX(.3); } }
+.luciernaga { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #fff6b0; box-shadow: 0 0 10px 3px rgba(255, 238, 140, .8);
+  opacity: 0; animation: brillo var(--d, 4s) ease-in-out var(--r, 0s) infinite; }
+@keyframes brillo { 0%, 100% { opacity: 0; transform: translateY(0) scale(.6); } 50% { opacity: .95; transform: translateY(-14px) scale(1); } }
+.contenido-inicio { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  max-width: 30rem; padding: 28px 22px; border-radius: 26px; background: rgba(14, 12, 40, .52); backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 10px 40px rgba(0, 0, 0, .35); }
+#inicio h1 { font-size: 1.75rem; line-height: 1.15; margin: 0; text-shadow: 0 2px 12px rgba(0, 0, 0, .5); }
+.area-nombre { margin: 0; padding: 5px 16px; border-radius: 999px; font-size: .95rem; font-weight: 800; letter-spacing: .28em; text-indent: .28em;
+  color: #1a1033; background: linear-gradient(90deg, #7be0ff, #b79bff, #ff9ccf); }
+#inicio .descripcion { margin: 0; color: #d6dcf0; line-height: 1.5; }
+#abrir:not(:disabled) { animation: pulso 2.2s ease-in-out infinite; }
+@keyframes pulso { 0%, 100% { box-shadow: 0 0 0 0 rgba(123, 216, 143, .55); } 50% { box-shadow: 0 0 0 12px rgba(123, 216, 143, 0); } }
+@media (prefers-reduced-motion: reduce) { .insecto .ala, #abrir { animation: none !important; } }
 .estado { font-size: .9rem; color: #8fa397 !important; }
 button, .boton { font: inherit; font-weight: 600; padding: 14px 28px; border: 0; border-radius: 12px; cursor: pointer;
   background: var(--acento); color: #0b1a10; }
 button:disabled { opacity: .45; cursor: default; }
 button.secundario, .boton.secundario { background: #2b3b31; color: var(--texto); padding: 10px 16px; font-weight: 500; }
 #demo { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; margin-top: 8px; }
-#demo p { width: 100%; }
+#demo p { width: 100%; margin: 0; }
 #modal { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .55); }
 #modal[hidden] { display: none; }
 .tarjeta { position: relative; width: min(100%, 36rem); max-height: 80vh; overflow: auto; background: #fff; color: #1b261f;

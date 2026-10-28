@@ -16,15 +16,19 @@
   <pre id="debug" hidden></pre>
 
   <section id="inicio">
-    <h1>Muestra interactiva del CRILAR</h1>
-    <p>Apuntá la cámara de tu celular a la vitrina entomológica: cada área se marca sobre la imagen. Tocá un recuadro para ver su información.</p>
-    <button id="abrir" type="button" disabled>Abrir cámara</button>
-    <p id="estado" class="estado">Cargando…</p>
+    <div id="fondo" aria-hidden="true"></div>
+    <div class="contenido-inicio">
+      <h1>Muestra interactiva del CRILAR</h1>
+      <p class="area-nombre">ÁREA ENTOMOLOGÍA</p>
+      <p class="descripcion">Apuntá la cámara de tu celular a la vitrina entomológica: cada área se marca sobre la imagen. Tocá un recuadro para ver su información.</p>
+      <button id="abrir" type="button" disabled>Abrir cámara</button>
+      <p id="estado" class="estado">Cargando…</p>
     <div id="demo" hidden>
       <p>Modo demostración (sin cámara):</p>
       <label class="boton secundario">Subir video o foto<input id="archivo" type="file" accept="video/*,image/*" hidden></label>
       <button id="demo-video" type="button" class="secundario">Video de muestra</button>
       <button id="demo-foto" type="button" class="secundario">Foto de ángulo</button>
+    </div>
     </div>
   </section>
 
