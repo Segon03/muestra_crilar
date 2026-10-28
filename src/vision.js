@@ -3,20 +3,23 @@
 import { emparejar, contarBuenos } from './emparejar.js';
 import { multiplicar } from './geometria.js';
 
-export const ANCHO_TRABAJO = 480;
 export const MIN_INLIERS = 15;      // criterio del plan para dar un plano por reconocido
+export const MIN_DEBIL = 10;        // por debajo no se informa; entre 10 y 14 hay que confirmarlo con otra detección
 const UMBRAL_RANSAC = 4.0;          // px sobre el cuadro de trabajo
-const MAX_PUNTOS = 800;             // mismo tope que el banco
+const MAX_PUNTOS_BANCO = 800;       // tope de puntos por plano en el banco (ver tools/exportar_banco.py)
+const MAX_PUNTOS_CUADRO = 2500;     // puntos que se calculan del cuadro (ordenados por respuesta)
+const PUNTOS_NORMAL = 800;          // con esto se hace la primera pasada: más puntos diluyen la prueba de razón
 const GRUESO = 300;                 // puntos usados en la búsqueda rápida entre vistas
 const CANDIDATAS = 4;               // vistas que pasan de la búsqueda rápida al ajuste fino
 const PALABRAS = 16;
+const REFS_BASE = ['base', 'base640', 'base420']; // vistas derivadas de la foto base, a distintas escalas
 
 export function cargarOpenCV() {
   // En esta compilación el módulo `cv` tiene un `then` que se resuelve a sí mismo: devolverlo
   // desde una promesa (o hacerle `await`) cuelga la página en un bucle infinito. Se espera el
   // callback de inicialización y se quita el `then` antes de entregarlo.
   return new Promise((resolve, reject) => {
-    const c = window.cv;
+    const c = globalThis.cv;
     if (!c) return reject(new Error('No se cargó OpenCV.js'));
     const listo = () => { c.then = undefined; resolve(c); };
     if (c.Mat) return listo();
@@ -38,6 +41,12 @@ export async function cargarBanco(ruta = 'datos/banco_akaze') {
     desc: new Uint32Array(buf, p.offset + p.n * 8, p.n * PALABRAS),
   }));
   return { planos, meta };
+}
+
+// Los primeros `m` puntos (los de mayor respuesta) de un cuadro ya descripto.
+function recortar(c, m) {
+  if (c.n <= m) return c;
+  return { pts: c.pts.subarray(0, 2 * m), desc: c.desc.subarray(0, m * PALABRAS), n: m };
 }
 
 export class Reconocedor {
@@ -64,7 +73,7 @@ export class Reconocedor {
     const idx = Array.from({ length: total }, (_, i) => i);
     const resp = idx.map((i) => kp.get(i).response);
     idx.sort((a, b) => resp[b] - resp[a]);
-    const n = Math.min(total, MAX_PUNTOS);
+    const n = Math.min(total, MAX_PUNTOS_CUADRO);
     const pts = new Float32Array(n * 2);
     const palabras = new Uint32Array(n * PALABRAS);
     const bytes = new Uint8Array(palabras.buffer);
@@ -99,34 +108,59 @@ export class Reconocedor {
     let res = null;
     if (H && H.rows === 3 && H.cols === 3) {
       let inl = 0;
-      for (let i = 0; i < mask.data.length; i++) if (mask.data[i]) inl++;
-      res = { H: Array.from(H.data64F), inliers: inl };
+      const pts = [];
+      for (let i = 0; i < mask.data.length; i++) {
+        if (!mask.data[i]) continue;
+        inl++;
+        if (pts.length < 400) pts.push(dst[2 * i], dst[2 * i + 1]); // puntos del cuadro, para seguirlos
+      }
+      res = { H: Array.from(H.data64F), inliers: inl, pts: Float32Array.from(pts) };
     }
     a.delete(); b.delete(); mask.delete(); if (H) H.delete();
     return res;
   }
 
-  // Reconoce los dos planos en un cuadro. Devuelve {A, B} con {H (base->cuadro), inliers, ref}.
+  // Reconoce los dos planos en un cuadro. Devuelve {A, B} con {H (base->cuadro), inliers, ref, pts}.
   detectar(imageData) {
     const cuadro = this.describir(imageData);
     const salida = { A: null, B: null, puntos: cuadro.pts, n: cuadro.n };
-    for (const pl of ['A', 'B']) salida[pl] = this.detectarPlano(pl, cuadro);
+    const normal = recortar(cuadro, PUNTOS_NORMAL);
+    salida.A = this.detectarPlano('A', normal, null);
+    // La caja (A) se reconoce a más distancia que la base (B): la vista del banco que sirvió para A
+    // es la primera candidata para B.
+    const refA = salida.A && salida.A.inliers >= MIN_DEBIL ? salida.A.ref : null;
+    const priori = [...new Set([refA, ...REFS_BASE].filter(Boolean))];
+    salida.B = this.detectarPlano('B', normal, priori);
+    // De lejos los puntos de la base son débiles y quedan fuera de los 800 más fuertes: segunda
+    // pasada de B con todos los puntos del cuadro.
+    if ((!salida.B || salida.B.inliers < MIN_INLIERS) && cuadro.n > PUNTOS_NORMAL) {
+      const r = this.detectarPlano('B', cuadro, priori);
+      if (r && (!salida.B || r.inliers > salida.B.inliers)) salida.B = r;
+    }
     return salida;
   }
 
-  detectarPlano(pl, cuadro) {
+  detectarPlano(pl, cuadro, refPrior) {
     const vistas = this.banco.planos.filter((p) => p.plano === pl);
     const probar = (p) => {
       const r = this.homografia(p, cuadro);
-      return r && { H: multiplicar(r.H, p.H), inliers: r.inliers, ref: p.ref };
+      return r && { H: multiplicar(r.H, p.H), inliers: r.inliers, ref: p.ref, pts: r.pts };
     };
     // 1) si ya estaba reconocido, probar primero con la misma vista (barato)
     const previa = this.ultimo[pl];
-    let mejor = null;
+    let mejor = null, mejorP = previa;
     if (previa) {
       mejor = probar(previa);
       if (mejor && mejor.inliers >= MIN_INLIERS) return mejor;
     }
+    // 1b) vistas prioritarias (la que sirvió para el otro plano y la foto base a varias escalas)
+    for (const ref of refPrior || []) {
+      if (mejor && mejor.inliers >= MIN_INLIERS) break;
+      const v = vistas.find((p) => p.ref === ref && p !== previa);
+      const r = v && probar(v);
+      if (r && (!mejor || r.inliers > mejor.inliers)) { mejor = r; mejorP = v; }
+    }
+    if (mejor && mejor.inliers >= MIN_INLIERS) { this.ultimo[pl] = mejorP; return mejor; }
     // 2) búsqueda rápida entre todas las vistas con los puntos más fuertes
     const nq = Math.min(cuadro.n, GRUESO);
     const pun = vistas
@@ -136,12 +170,11 @@ export class Reconocedor {
       .sort((a, b) => b.c - a.c)
       .slice(0, CANDIDATAS);
     // 3) ajuste fino con las mejores candidatas
-    let mejorP = previa;
     for (const { p } of pun) {
       const r = probar(p);
       if (r && (!mejor || r.inliers > mejor.inliers)) { mejor = r; mejorP = p; }
     }
-    this.ultimo[pl] = mejor && mejor.inliers >= MIN_INLIERS ? mejorP : null;
+    this.ultimo[pl] = mejor && mejor.inliers >= MIN_DEBIL ? mejorP : null;
     return mejor;
   }
 }

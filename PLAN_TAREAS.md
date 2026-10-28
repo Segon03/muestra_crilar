@@ -55,8 +55,8 @@ Las 11 áreas son: `01_caja_entomologica_superior` (un solo recuadro para toda l
 
 ### Fase 0: preparar el repositorio y el entorno
 - [x] Repositorio preparado: `README.md`, `.gitignore`, `CLAUDE.md`, carpetas `src/`, `vendor/`, `tools/`, `tests/`, `qr/`, `referencias/` (con todo el material) y `contenido/` (con `contenidos.json`).
-- [ ] Crear `index.html` mínimo en la raíz.
-- [ ] Activar GitHub Pages desde `main` y verificar que la URL cargue una página de prueba.
+- [x] Crear `index.html` mínimo en la raíz.
+- [x] Activar GitHub Pages y verificar que la URL cargue una página de prueba (activado por el usuario; hoy publica la rama `claude/serene-ptolemy-bmmjlh`).
 - [ ] Si se trabaja en la computadora del usuario: OneDrive puede bloquear archivos de `.git` mientras sincroniza. Si da errores, pausar la sincronización mientras se trabaja.
 
 ### Fase 1: prototipo y elección del algoritmo (Python, fuera de la app)
@@ -71,16 +71,16 @@ Las 11 áreas son: `01_caja_entomologica_superior` (un solo recuadro para toda l
 - [ ] Si con el banco de referencias el porcentaje de cuadros reconocidos sigue bajo, pasar al detector entrenado (ver plan B más abajo) usando los cuadros anotados como datos de entrenamiento.
 
 ### Fase 2: primera versión visible (hito para ver la app funcionando)
-- [ ] Pantalla de inicio con un botón "Abrir cámara" y el pedido de permiso. Cámara trasera, con `playsinline` para que ande en iPhone.
-- [ ] Cargar OpenCV.js y calcular una sola vez los puntos característicos de los dos planos de referencia.
-- [ ] Bucle de video: detección sobre cuadro reducido, homografía, proyección de los 11 recuadros dibujados sobre un canvas encima del video, con el nombre de cada área.
-- [ ] Mensaje cuando no se encuentra la vitrina ("Apuntá la cámara a la vitrina") y ocultar los recuadros si se pierde por más de medio segundo.
-- [ ] Detección al tocar: determinar si el toque cae dentro de un recuadro y abrir una ventana emergente con el título y "Contenido próximamente".
-- [ ] Modo demostración (`?demo=1`): permite probar sin cámara con un video subido o con la foto de referencia. Modo diagnóstico (`?debug=1`): muestra puntos detectados, inliers y cuadros por segundo.
-- [ ] Publicar en Pages y probar desde un celular real.
+- [x] Pantalla de inicio con un botón "Abrir cámara" y el pedido de permiso. Cámara trasera, con `playsinline` para que ande en iPhone.
+- [x] Cargar OpenCV.js y cargar los dos planos de referencia (los puntos se calculan con `tools/exportar_banco.py` y se leen de `datos/`, no se recalculan en el celular). una sola vez los puntos característicos de los dos planos de referencia.
+- [x] Bucle de video: detección sobre cuadro reducido, homografía, proyección de los 11 recuadros dibujados sobre un canvas encima del video, con el nombre de cada área.
+- [x] Mensaje cuando no se encuentra la vitrina ("Apuntá la cámara a la vitrina") y ocultar los recuadros si se pierde por más de medio segundo.
+- [x] Detección al tocar: determinar si el toque cae dentro de un recuadro y abrir una ventana emergente con el título y "Contenido próximamente".
+- [x] Modo demostración (`?demo=1`): permite probar sin cámara con un video subido o con la foto de referencia. Modo diagnóstico (`?debug=1`): muestra puntos detectados, inliers y cuadros por segundo.
+- [x] Publicar en Pages y probar desde un celular real (probado por el usuario: anda bien, pero había que acercarse mucho).
 
 ### Fase 3: estabilidad
-- [ ] Agregar seguimiento con flujo óptico entre detecciones y suavizado de las esquinas.
+- [x] Agregar seguimiento con flujo óptico entre detecciones y suavizado de las esquinas (la detección corre en un worker; ver `src/seguimiento.js`).
 - [ ] Ajustar la frecuencia de detección para llegar a unos 15 cuadros por segundo o más en un celular Android de gama media.
 - [ ] Probar con reflejos del vidrio, poca luz y distintas distancias, y ajustar los umbrales.
 - [ ] Si las áreas 08 y 10 no son estables, aplicar el plan B descrito arriba.

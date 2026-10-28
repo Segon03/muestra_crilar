@@ -65,3 +65,18 @@ export function contiene(poli, x, y) {
 export function planoDe(id) {
   return id.startsWith('01_') ? 'A' : 'B';
 }
+
+// Esquinas de cada plano sobre vitrina_base.jpg (1600x1200); sirven para comparar homografías.
+export const ESQUINAS = {
+  A: [[352, 25], [1040, 25], [1040, 502], [352, 502]],
+  B: [[200, 640], [1380, 640], [1380, 1165], [195, 1165]],
+};
+
+// Distancia media (px del cuadro) entre las esquinas de un plano proyectadas con dos homografías.
+export function distanciaHomografias(plano, H1, H2) {
+  const q1 = proyectarCuadrilatero(H1, ESQUINAS[plano]);
+  const q2 = proyectarCuadrilatero(H2, ESQUINAS[plano]);
+  let d = 0;
+  for (let i = 0; i < 4; i++) d += Math.hypot(q1[i][0] - q2[i][0], q1[i][1] - q2[i][1]);
+  return d / 4;
+}

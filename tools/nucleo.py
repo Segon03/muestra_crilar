@@ -21,6 +21,7 @@ ANCHO_REF = 960            # ancho de la referencia al calcular sus puntos
 MIN_INLIERS = 15           # criterio del plan para dar un plano por reconocido
 UMBRAL_RANSAC = 4.0        # px, en la escala de trabajo
 MAX_PUNTOS = None          # si se fija, se conservan sólo los de mayor respuesta (referencia y cuadro)
+MAX_PUNTOS_CUADRO = None   # tope propio para el cuadro; si es None se usa MAX_PUNTOS
 
 # Polígonos de cada plano sobre vitrina_base.jpg (px de la foto de 1600x1200)
 POLI_A = np.float32([[352, 25], [1040, 25], [1040, 502], [352, 502]])
@@ -127,7 +128,7 @@ class Reconocedor:
         """Devuelve (kp_pts, desc, escala) del cuadro reducido."""
         small, s = reducir(img)
         kp, desc = self.det.detectAndCompute(a_gris(small), None)
-        kp, desc = top_puntos(kp, desc, MAX_PUNTOS)
+        kp, desc = top_puntos(kp, desc, MAX_PUNTOS_CUADRO or MAX_PUNTOS)
         pts = np.float32([k.pt for k in kp]).reshape(-1, 2) if kp else np.zeros((0, 2), np.float32)
         return pts, desc, s
 

@@ -1,16 +1,20 @@
 // Pantalla principal: cámara, bucle de reconocimiento, recuadros sobre el video y ventana emergente.
-import { cargarOpenCV, cargarBanco, Reconocedor, ANCHO_TRABAJO, MIN_INLIERS } from './vision.js';
+import { cargarOpenCV, cargarBanco, Reconocedor, MIN_DEBIL } from './vision.js';
+import { Seguidor, Rastreo } from './seguimiento.js';
 import { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, areaPoligono, contiene, planoDe } from './geometria.js';
 
 const params = new URLSearchParams(location.search);
 const DEMO = params.has('demo');
 const DEBUG = params.has('debug');
 const PERDIDA_MS = 500; // se ocultan los recuadros de un plano si se pierde por más de esto
+const ANCHO_TRABAJO = Number(params.get('ancho')) || 640; // ancho del cuadro sobre el que se detecta y se sigue
+const SUAVIZADO = 0.55; // peso del valor nuevo en el suavizado de esquinas (1 = sin suavizar)
 
 const $ = (id) => document.getElementById(id);
 const video = $('video'), imagen = $('imagen'), canvas = $('overlay'), ctx = canvas.getContext('2d');
-const estado = { reconocedor: null, areas: [], contenidos: {}, fuente: null, visto: { A: 0, B: 0 }, quads: {},
-  puntos: null, stats: { ms: 0, fps: 0, inl: { A: 0, B: 0 }, ref: { A: '-', B: '-' }, n: 0 }, ultimaDeteccion: 0 };
+const estado = { reconocedor: null, worker: null, rastreo: null, seguidor: null, areas: [], contenidos: {}, fuente: null,
+  suave: {}, puntos: null, enVuelo: false, idEnvio: 0, grisEnviado: null, prevGris: null, anchoCuadro: ANCHO_TRABAJO,
+  stats: { ms: 0, det: 0, fps: 0, n: 0, modo: '-' } };
 window.__app = estado; // para pruebas
 
 // ---------- carga ----------
@@ -25,8 +29,10 @@ async function iniciar() {
     estado.areas = areas.areas.map((a) => ({ id: a.id, plano: planoDe(a.id), quad: cajaACuadrilatero(a.bbox_px) }));
     estado.contenidos = contenidos.areas || {};
     $('estado').textContent = 'Cargando visión por computadora…';
-    const [cv, banco] = await Promise.all([esperarOpenCV(), cargarBanco()]);
-    estado.reconocedor = new Reconocedor(cv, banco);
+    const cv = await esperarOpenCV();
+    estado.seguidor = new Seguidor(cv);
+    estado.rastreo = new Rastreo(estado.seguidor, ANCHO_TRABAJO);
+    await iniciarDetector(cv);
     $('estado').textContent = 'Listo';
     $('abrir').disabled = false;
   } catch (e) {
@@ -43,6 +49,32 @@ function esperarOpenCV() {
     };
     probar();
   });
+}
+
+// La detección corre en un worker; si el navegador no lo permite, se hace en el hilo principal.
+async function iniciarDetector(cv) {
+  const banco = new URL('datos/banco_akaze', location.href).href;
+  try {
+    if (params.has('sinworker')) throw new Error('sin worker (forzado)');
+    const w = new Worker('src/detector.worker.js');
+    await new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error('el worker no respondió')), 60000);
+      w.onmessage = (e) => {
+        if (e.data.tipo === 'listo') { clearTimeout(t); resolve(); }
+        else if (e.data.tipo === 'error') { clearTimeout(t); reject(new Error(e.data.mensaje)); }
+      };
+      w.onerror = (e) => { clearTimeout(t); reject(new Error(e.message || 'error en el worker')); };
+      w.postMessage({ tipo: 'init', banco });
+    });
+    w.onmessage = alResultado;
+    w.onerror = (e) => console.error('worker', e.message);
+    estado.worker = w;
+    estado.stats.modo = 'worker';
+  } catch (e) {
+    console.warn('Detección en el hilo principal:', e.message);
+    estado.reconocedor = new Reconocedor(cv, await cargarBanco(banco));
+    estado.stats.modo = 'principal';
+  }
 }
 
 // ---------- fuentes de imagen ----------
@@ -73,56 +105,80 @@ function empezar(el) {
   $('inicio').hidden = true;
   $('mensaje').hidden = false;
   ajustarCanvas();
-  if (!estado.bucle) { estado.bucle = true; setTimeout(ciclo, 0); requestAnimationFrame(dibujar); }
+  if (!estado.bucle) { estado.bucle = true; requestAnimationFrame(cuadro); }
 }
 
 const medidas = (el) => (el === video ? [video.videoWidth, video.videoHeight] : [imagen.naturalWidth, imagen.naturalHeight]);
 
-// ---------- bucle de detección ----------
+// ---------- bucle principal: seguimiento en cada cuadro, detección en segundo plano ----------
 const fuera = document.createElement('canvas');
 const fctx = fuera.getContext('2d', { willReadFrequently: true });
+let ultimoCuadro = 0;
 
-function ciclo() {
+function cuadro(ahora) {
+  requestAnimationFrame(cuadro);
   const el = estado.fuente;
   const [vw, vh] = medidas(el);
-  if (el && vw) {
+  if (!vw || ahora - ultimoCuadro < 30) { return; } // como mucho ~30 cuadros por segundo
+  try {
     fuera.width = ANCHO_TRABAJO;
     fuera.height = Math.round((vh * ANCHO_TRABAJO) / vw);
     fctx.drawImage(el, 0, 0, fuera.width, fuera.height);
-    const t0 = performance.now();
-    try {
-      const r = estado.reconocedor.detectar(fctx.getImageData(0, 0, fuera.width, fuera.height));
-      const ahora = performance.now();
-      actualizar(r, ahora, fuera.width, fuera.height);
-      estado.stats.ms = ahora - t0;
-      estado.stats.fps = 1000 / (ahora - (estado.ultimaDeteccion || t0 - 1));
-      estado.ultimaDeteccion = ahora;
-    } catch (e) {
-      console.error(e);
-      $('mensaje').textContent = 'Error de reconocimiento: ' + e.message;
-      return;
+    const img = fctx.getImageData(0, 0, fuera.width, fuera.height);
+    const gris = estado.seguidor.gris(img);
+    estado.anchoCuadro = fuera.width;
+    if (estado.prevGris) estado.rastreo.avanzar(estado.prevGris, gris, ahora);
+
+    if (estado.worker) {
+      if (!estado.enVuelo) {
+        estado.enVuelo = true;
+        estado.grisEnviado?.delete();
+        estado.grisEnviado = gris.clone();
+        const copia = img.data.buffer.slice(0);
+        estado.worker.postMessage({ tipo: 'cuadro', id: ++estado.idEnvio, ancho: img.width, alto: img.height, buf: copia }, [copia]);
+      }
+    } else if (estado.reconocedor) { // sin worker: la detección bloquea este cuadro
+      const t0 = performance.now();
+      const r = estado.reconocedor.detectar(img);
+      estado.stats.det = performance.now() - t0;
+      estado.puntos = r.puntos; estado.stats.n = r.n;
+      estado.rastreo.recibir(r, gris, gris, ahora);
     }
+    estado.prevGris?.delete();
+    estado.prevGris = gris;
+    estado.stats.fps = 1000 / (ahora - (ultimoCuadro || ahora - 33));
+    ultimoCuadro = ahora;
+    actualizarQuads(ahora);
+    dibujar(ahora);
+  } catch (e) {
+    console.error(e);
+    $('mensaje').hidden = false;
+    $('mensaje').textContent = 'Error de reconocimiento: ' + e.message;
   }
-  setTimeout(ciclo, 0);
 }
 
-function actualizar(r, ahora, ancho, alto) {
-  estado.puntos = r.puntos;
-  estado.stats.n = r.n;
-  for (const pl of ['A', 'B']) {
-    const res = r[pl];
-    estado.stats.inl[pl] = res ? res.inliers : 0;
-    estado.stats.ref[pl] = res ? res.ref : '-';
-    if (!res || res.inliers < MIN_INLIERS) continue;
-    let alguna = false;
-    for (const a of estado.areas) {
-      if (a.plano !== pl) continue;
-      const q = proyectarCuadrilatero(res.H, a.quad);
-      if (cuadrilateroValido(q, ancho, alto)) { estado.quads[a.id] = { q, t: ahora }; alguna = true; }
-    }
-    if (alguna) estado.visto[pl] = ahora;
+function alResultado(e) {
+  const m = e.data;
+  if (m.tipo === 'error') { console.error('worker:', m.mensaje); estado.enVuelo = false; return; }
+  if (m.tipo !== 'resultado') return;
+  estado.enVuelo = false;
+  estado.puntos = m.puntos; estado.stats.n = m.n; estado.stats.det = m.ms;
+  if (estado.grisEnviado && estado.prevGris) estado.rastreo.recibir(m, estado.grisEnviado, estado.prevGris, performance.now());
+}
+
+// Recuadros de cada área según las homografías vigentes, con las esquinas suavizadas.
+function actualizarQuads(ahora) {
+  const H = estado.rastreo.vigentes(ahora, PERDIDA_MS);
+  const salto = 0.1 * estado.anchoCuadro;
+  for (const a of estado.areas) {
+    const h = H[a.plano];
+    if (!h) { delete estado.suave[a.id]; continue; }
+    const q = proyectarCuadrilatero(h, a.quad);
+    if (!cuadrilateroValido(q, estado.anchoCuadro, estado.anchoCuadro * 2)) { delete estado.suave[a.id]; continue; }
+    const prev = estado.suave[a.id];
+    const lejos = prev && q.some(([x, y], i) => Math.hypot(x - prev[i][0], y - prev[i][1]) > salto);
+    estado.suave[a.id] = !prev || lejos ? q : q.map(([x, y], i) => [prev[i][0] + SUAVIZADO * (x - prev[i][0]), prev[i][1] + SUAVIZADO * (y - prev[i][1])]);
   }
-  estado.anchoCuadro = ancho;
 }
 
 // ---------- dibujo ----------
@@ -138,53 +194,43 @@ addEventListener('resize', ajustarCanvas);
 function aPantalla() {
   const [vw, vh] = medidas(estado.fuente);
   const esc = Math.max(innerWidth / vw, innerHeight / vh);
-  const k = (esc * vw) / (estado.anchoCuadro || ANCHO_TRABAJO);
+  const k = (esc * vw) / estado.anchoCuadro;
   const ox = (innerWidth - vw * esc) / 2, oy = (innerHeight - vh * esc) / 2;
   return ([x, y]) => [x * k + ox, y * k + oy];
-}
-
-function visibles(ahora) {
-  const out = [];
-  for (const a of estado.areas) {
-    const e = estado.quads[a.id];
-    if (e && ahora - estado.visto[a.plano] < PERDIDA_MS) out.push({ id: a.id, plano: a.plano, q: e.q });
-  }
-  return out;
 }
 
 const titulo = (id) => estado.contenidos[id]?.titulo || id.replace(/^\d+_/, '').replace(/_/g, ' ');
 
 function dibujar() {
-  const ahora = performance.now();
   ctx.clearRect(0, 0, innerWidth, innerHeight);
-  if (estado.fuente && estado.anchoCuadro) {
-    const pant = aPantalla();
-    const lista = visibles(ahora);
-    $('mensaje').hidden = lista.length > 0;
-    estado.pantalla = lista.map((v) => ({ id: v.id, poli: v.q.map(pant) }));
-    for (const v of estado.pantalla) {
-      const color = planoDe(v.id) === 'A' ? '#7bd88f' : '#ffc857';
-      ctx.lineWidth = 3; ctx.strokeStyle = color; ctx.fillStyle = color + '22';
-      ctx.beginPath();
-      v.poli.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.font = '600 13px system-ui, sans-serif';
-      const [x, y] = v.poli[0], t = titulo(v.id), w = ctx.measureText(t).width + 10;
-      ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(x, y - 20, w, 20);
-      ctx.fillStyle = color; ctx.fillText(t, x + 5, y - 5);
-    }
-    if (DEBUG && estado.puntos) {
+  const pant = aPantalla();
+  estado.pantalla = estado.areas.filter((a) => estado.suave[a.id]).map((a) => ({ id: a.id, poli: estado.suave[a.id].map(pant) }));
+  $('mensaje').hidden = estado.pantalla.length > 0;
+  if (!estado.pantalla.length) $('mensaje').textContent = 'Apuntá la cámara a la vitrina';
+  for (const v of estado.pantalla) {
+    const color = planoDe(v.id) === 'A' ? '#7bd88f' : '#ffc857';
+    ctx.lineWidth = 3; ctx.strokeStyle = color; ctx.fillStyle = color + '22';
+    ctx.beginPath();
+    v.poli.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.font = '600 13px system-ui, sans-serif';
+    const [x, y] = v.poli[0], t = titulo(v.id), w = ctx.measureText(t).width + 10;
+    ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(x, y - 20, w, 20);
+    ctx.fillStyle = color; ctx.fillText(t, x + 5, y - 5);
+  }
+  if (DEBUG) {
+    if (estado.puntos) {
       ctx.fillStyle = '#ff4d4d';
       for (let i = 0; i < estado.puntos.length; i += 2) {
         const [x, y] = pant([estado.puntos[i], estado.puntos[i + 1]]);
         ctx.fillRect(x - 1, y - 1, 2, 2);
       }
-      const s = estado.stats;
-      $('debug').textContent = `puntos: ${s.n}   detección: ${s.ms.toFixed(0)} ms (${s.fps.toFixed(1)} /s)\n` +
-        `plano A: ${s.inl.A} inliers  (${s.ref.A})\nplano B: ${s.inl.B} inliers  (${s.ref.B})`;
     }
+    const s = estado.stats, p = estado.rastreo.planos;
+    const fila = (pl) => (p[pl] ? `${p[pl].confirmado ? 'ok' : 'tentativo'}, ${p[pl].inliers} inliers, ${p[pl].pts.length / 2} seguidos (${p[pl].ref})` : '-');
+    $('debug').textContent = `${s.modo}  ancho ${ANCHO_TRABAJO}  ${s.fps.toFixed(0)} cuadros/s\n` +
+      `detección: ${s.det.toFixed(0)} ms   puntos: ${s.n}\nplano A: ${fila('A')}\nplano B: ${fila('B')}`;
   }
-  requestAnimationFrame(dibujar);
 }
 
 // ---------- toque ----------

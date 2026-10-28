@@ -13,6 +13,7 @@ import json
 import os
 import sys
 
+import cv2
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -20,12 +21,17 @@ import nucleo as n
 import comparar
 
 MAX_PUNTOS = 800
+# Versiones reducidas de la foto base: sirven para reconocer la vitrina cuando se ve chica (de lejos)
+ANCHOS_BASE_EXTRA = (640, 420)
 SALIDA = os.path.join(n.RAIZ, "datos")
 
 
 def main():
     n.MAX_PUNTOS = MAX_PUNTOS
     banco = comparar.cargar_banco("akaze", True)
+    base = cv2.imread(os.path.join(n.REF, "vitrina_base.jpg"))
+    for ancho in ANCHOS_BASE_EXTRA:
+        banco.append(n.Referencia(f"base{ancho}", base, "akaze", np.eye(3), np.eye(3), ancho=ancho))
     os.makedirs(SALIDA, exist_ok=True)
     planos, bloques, off = [], [], 0
     for ref in banco:

@@ -1,0 +1,74 @@
+// Simula la app (detección con latencia + seguimiento) en Node sobre video_muestra2.mp4 y mide el IoU
+// contra las cajas anotadas en los cuadros anotados. Necesita ffmpeg. Uso: node tests/seguimiento_node.cjs [fps] [cada] [latencia]
+//   fps: cuadros por segundo simulados (15), cada: una detección cada N cuadros (4), latencia: cuadros que tarda en llegar (2)
+global.self = global;
+const fs = require('fs'), path = require('path'), { spawn } = require('child_process');
+const raiz = path.join(__dirname, '..');
+const cv = require(path.join(raiz, 'vendor/opencv/opencv.js'));
+const FPS = Number(process.argv[2] || 15), CADA = Number(process.argv[3] || 4), LAT = Number(process.argv[4] || 2);
+const W = 480, H = 854, TAM = W * H * 4;
+
+(async () => {
+  const { Reconocedor } = await import(path.join(raiz, 'src/vision.js'));
+  const { Seguidor, Rastreo } = await import(path.join(raiz, 'src/seguimiento.js'));
+  const { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, planoDe } = await import(path.join(raiz, 'src/geometria.js'));
+  await new Promise((r) => { if (cv.Mat) r(); else cv.onRuntimeInitialized = r; });
+  cv.then = undefined;
+  const meta = JSON.parse(fs.readFileSync(path.join(raiz, 'datos/banco_akaze.json')));
+  const b = fs.readFileSync(path.join(raiz, 'datos/banco_akaze.bin'));
+  const buf = b.buffer.slice(b.byteOffset, b.byteOffset + b.length);
+  const planos = meta.planos.map((p) => ({ ref: p.ref, plano: p.plano, n: p.n, H: p.H, pts: new Float32Array(buf, p.offset, p.n * 2), desc: new Uint32Array(buf, p.offset + p.n * 8, p.n * 16) }));
+  const rec = new Reconocedor(cv, { planos });
+  const seg = new Seguidor(cv), ras = new Rastreo(seg, W);
+  const areas = JSON.parse(fs.readFileSync(path.join(raiz, 'referencias/areas.json'))).areas;
+  const gt = JSON.parse(fs.readFileSync(path.join(raiz, 'tests/gt_video_muestra2.json')));
+  const gtPorCuadro = new Map(gt.cuadros.map((c) => [Math.round((c.frame / 30) * FPS), c]));
+  const iou = (a, b2) => { const ix = Math.max(0, Math.min(a[2], b2[2]) - Math.max(a[0], b2[0])), iy = Math.max(0, Math.min(a[3], b2[3]) - Math.max(a[1], b2[1])); const i = ix * iy; const u = (a[2] - a[0]) * (a[3] - a[1]) + (b2[2] - b2[0]) * (b2[3] - b2[1]) - i; return u > 0 ? i / u : 0; };
+
+  const ff = spawn('ffmpeg', ['-v', 'error', '-i', path.join(raiz, 'referencias/pruebas/video_muestra2.mp4'), '-vf', `fps=${FPS}`, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-']);
+  let resto = Buffer.alloc(0), i = 0, prev = null, pendientes = [];
+  const res = { seg: [], sin: [] };
+  const medir = (c, homografias, destino) => {
+    for (const a of areas) {
+      const g = c.cajas[a.id]; if (!g) continue;
+      const Hh = homografias[planoDe(a.id)]; let v = 0, proy = 0;
+      if (Hh) { const q = proyectarCuadrilatero(Hh, cajaACuadrilatero(a.bbox_px)); if (cuadrilateroValido(q, W, H)) { proy = 1; const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]); v = iou([Math.max(0, Math.min(...xs)), Math.max(0, Math.min(...ys)), Math.min(W, Math.max(...xs)), Math.min(H, Math.max(...ys))], g); } }
+      destino.push({ v, proy });
+    }
+  };
+  let tTrack = 0, nTrack = 0, tDet = 0, nDet = 0;
+  const procesar = (frame) => {
+    const ahora = (i / FPS) * 1000;
+    const img = { data: new Uint8ClampedArray(frame.buffer.slice(frame.byteOffset, frame.byteOffset + TAM)), width: W, height: H };
+    const gris = seg.gris(img);
+    let t0 = Date.now();
+    if (prev) ras.avanzar(prev, gris, ahora);
+    tTrack += Date.now() - t0; nTrack++;
+    // detección: empieza en este cuadro y llega LAT cuadros después
+    if (i % CADA === 0) { t0 = Date.now(); const det = rec.detectar(img); tDet += Date.now() - t0; nDet++; pendientes.push({ llega: i + LAT, det, gris: gris.clone() }); }
+    for (const p of pendientes.filter((p) => p.llega <= i)) { ras.recibir(p.det, p.gris, gris, ahora); p.gris.delete(); }
+    pendientes = pendientes.filter((p) => p.llega > i);
+    const c = gtPorCuadro.get(i);
+    if (c) {
+      medir(c, ras.vigentes(ahora, 500), res.seg);
+      // referencia: detección directa sobre este cuadro, sin seguimiento (como la Fase 2)
+      rec.ultimo = { A: null, B: null };
+      const d = rec.detectar(img);
+      medir(c, { A: d.A && d.A.inliers >= 15 ? d.A.H : null, B: d.B && d.B.inliers >= 15 ? d.B.H : null }, res.sin);
+    }
+    if (prev) prev.delete();
+    prev = gris; i++;
+  };
+  ff.stdout.on('data', (d) => {
+    resto = Buffer.concat([resto, d]);
+    while (resto.length >= TAM) { procesar(resto.subarray(0, TAM)); resto = resto.subarray(TAM); }
+  });
+  ff.stderr.on('data', (d) => process.stderr.write(d));
+  await new Promise((r) => ff.on('close', r));
+  const resumen = (v) => `proyectadas ${(100 * v.filter((x) => x.proy).length / v.length).toFixed(1)}%  IoU medio ${(v.reduce((s, x) => s + x.v, 0) / v.length).toFixed(2)}  IoU>=0.5 ${(100 * v.filter((x) => x.v >= 0.5).length / v.length).toFixed(1)}%  (${v.length} cajas)`;
+  console.log(`cuadros: ${i}  fps simulados: ${FPS}  detección cada ${CADA}, latencia ${LAT}`);
+  console.log('con seguimiento :', resumen(res.seg));
+  console.log('detección sola  :', resumen(res.sin));
+  console.log(`seguimiento: ${(tTrack / nTrack).toFixed(1)} ms por cuadro   detección: ${(tDet / nDet).toFixed(0)} ms`);
+  process.exit(0);
+})().catch((e) => { console.log('ERR', String((e && e.stack) || e).slice(0, 600)); process.exit(1); });
