@@ -33,7 +33,10 @@ const W = 480, H = 854, TAM = W * H * 4;
   const ff = spawn('ffmpeg', ['-v', 'error', '-i', path.join(raiz, 'referencias/pruebas/video_muestra2.mp4'), '-vf', `fps=${FPS}`, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-']);
   let resto = Buffer.alloc(0), i = 0, prev = null, pendientes = [];
   const res = { seg: [], sin: [] };
-  const medir = (c, homografias, destino) => {
+  const { solapeMesaConTarjetas, SOLAPE_MAX } = await import(path.join(raiz, 'src/consistencia.js'));
+  const medir = (c, hom, destino) => {
+    let homografias = hom;
+    if (hom.C && hom.B && solapeMesaConTarjetas(areas, hom, W, H) > SOLAPE_MAX) homografias = { ...hom, C: null }; // como la app
     for (const a of areas) {
       const g = c.cajas[a.id]; if (!g) continue;
       let Hh = homografias[a.plano], base = a.quad;

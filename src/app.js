@@ -6,6 +6,7 @@ import { iniciarFondo, detenerFondo } from './fondo.js';
 import { ajustarCuadrilatero } from './ajuste.js';
 import { cargarVerificador } from './verificacion.js';
 import { armarAreas } from './areas.js';
+import { solapeMesaConTarjetas, SOLAPE_MAX } from './consistencia.js';
 import { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, areaPoligono, contiene, planoDe } from './geometria.js';
 
 const params = new URLSearchParams(location.search);
@@ -199,6 +200,10 @@ function alResultado(e) {
 function actualizarQuads(ahora) {
   estado.stats.ajuste = '-';
   const H = estado.rastreo.vigentes(ahora, PERDIDA_MS);
+  // la mesa no puede caer encima de las tarjetas: si pasa, esa alineación es equivocada
+  const solape = solapeMesaConTarjetas(estado.areas, H, estado.anchoCuadro, estado.anchoCuadro * 2);
+  estado.stats.solapeC = solape;
+  if (solape > SOLAPE_MAX) { estado.rastreo.planos.C = null; H.C = null; }
   const salto = 0.1 * estado.anchoCuadro;
   for (const a of estado.areas) {
     let h = H[a.plano], base = a.quad, aprox = false;
@@ -269,7 +274,7 @@ function dibujar() {
     const s = estado.stats, p = estado.rastreo.planos;
     const fila = (pl) => (p[pl] ? `${p[pl].confirmado ? 'ok' : 'tentativo'}, ${p[pl].inliers} inliers, ${p[pl].pts.length / 2} seguidos (${p[pl].ref})` : '-');
     $('debug').textContent = `${s.modo}  ancho ${ANCHO_TRABAJO}  ${s.fps.toFixed(0)} cuadros/s\n` +
-      `detección: ${s.det.toFixed(0)} ms   puntos: ${s.n}   ajuste de borde: ${s.ajuste || '-'}\nplano A: ${fila('A')}\nplano B: ${fila('B')}\nplano C: ${fila('C')}\n` +
+      `detección: ${s.det.toFixed(0)} ms   puntos: ${s.n}   ajuste de borde: ${s.ajuste || '-'}\nplano A: ${fila('A')}\nplano B: ${fila('B')}\nplano C: ${fila('C')}${s.solapeC > SOLAPE_MAX ? '  (descartada: se superpone con las tarjetas)' : ''}\n` +
       `parecido de bordes: base ${fmt(s.ncc?.B)}  mesa ${fmt(s.ncc?.C)}${s.rechazo ? '  (rechazadas: ' + Object.entries(s.rechazo).map(([p, x]) => `${p} ${x.inliers} inl., ${x.ncc.toFixed(2)}`).join('; ') + ')' : ''}`;
   }
 }

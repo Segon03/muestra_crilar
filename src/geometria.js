@@ -83,3 +83,32 @@ export function distanciaHomografias(plano, H1, H2) {
   for (let i = 0; i < 4; i++) d += Math.hypot(q1[i][0] - q2[i][0], q1[i][1] - q2[i][1]);
   return d / 4;
 }
+
+// Intersección de dos polígonos convexos (Sutherland-Hodgman). Devuelve los vértices (puede ser []).
+export function interseccionConvexa(sujeto, recorte) {
+  const orientacion = (p) => { let a = 0; for (let i = 0; i < p.length; i++) { const [x1, y1] = p[i], [x2, y2] = p[(i + 1) % p.length]; a += x1 * y2 - x2 * y1; } return a >= 0 ? 1 : -1; };
+  const o = orientacion(recorte);
+  const dentro = (p, a, b) => o * ((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])) >= 0;
+  const cruce = (p, q, a, b) => {
+    const A1 = q[1] - p[1], B1 = p[0] - q[0], C1 = A1 * p[0] + B1 * p[1];
+    const A2 = b[1] - a[1], B2 = a[0] - b[0], C2 = A2 * a[0] + B2 * a[1];
+    const det = A1 * B2 - A2 * B1;
+    return Math.abs(det) < 1e-12 ? q : [(B2 * C1 - B1 * C2) / det, (A1 * C2 - A2 * C1) / det];
+  };
+  let salida = sujeto;
+  for (let i = 0; i < recorte.length && salida.length; i++) {
+    const a = recorte[i], b = recorte[(i + 1) % recorte.length];
+    const entrada = salida;
+    salida = [];
+    for (let j = 0; j < entrada.length; j++) {
+      const p = entrada[j], q = entrada[(j + 1) % entrada.length];
+      if (dentro(q, a, b)) {
+        if (!dentro(p, a, b)) salida.push(cruce(p, q, a, b));
+        salida.push(q);
+      } else if (dentro(p, a, b)) {
+        salida.push(cruce(p, q, a, b));
+      }
+    }
+  }
+  return salida;
+}
