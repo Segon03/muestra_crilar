@@ -1,0 +1,11 @@
+# sistema y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+*.af~lock~
+.vscode/
+# dependencias y resultados locales
+node_modules/
+__pycache__/
+*.pyc
+tools/salida/
