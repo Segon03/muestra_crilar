@@ -5,6 +5,7 @@ import { abrirVentana, ventanaAbierta } from './ventana.js';
 import { iniciarFondo, detenerFondo } from './fondo.js';
 import { ajustarCuadrilatero } from './ajuste.js';
 import { cargarVerificador } from './verificacion.js';
+import { armarAreas } from './areas.js';
 import { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, areaPoligono, contiene, planoDe } from './geometria.js';
 
 const params = new URLSearchParams(location.search);
@@ -33,9 +34,8 @@ async function iniciar() {
       fetch('contenido/contenidos.json').then((r) => r.json()).catch(() => ({ areas: {} })),
     ]);
     // si el banco todavía no trae vistas de la mesa (plano C), esas áreas se siguen con la base (B)
-    const hayC = await fetch('datos/banco_akaze.json').then((r) => r.json()).then((m) => m.planos.some((p) => p.plano === 'C')).catch(() => false);
-    const planoArea = (id) => { const p = planoDe(id); return p === 'C' && !hayC ? 'B' : p; };
-    estado.areas = areas.areas.map((a) => ({ id: a.id, plano: planoArea(a.id), quad: poligonos.poligonos[a.id] || cajaACuadrilatero(a.bbox_px) }));
+    const hayC = await fetch('datos/banco_akaze.json').then((r) => r.json()).then((m) => m.planos.some((p) => p.plano === 'C' && p.ref === 'foto7.jpeg')).catch(() => false);
+    estado.areas = armarAreas(areas, poligonos, hayC);
     estado.contenidos = contenidos.areas || {};
     $('estado').textContent = 'Cargando visión por computadora…';
     const cv = await esperarOpenCV();
@@ -201,9 +201,10 @@ function actualizarQuads(ahora) {
   const H = estado.rastreo.vigentes(ahora, PERDIDA_MS);
   const salto = 0.1 * estado.anchoCuadro;
   for (const a of estado.areas) {
-    const h = H[a.plano];
-    if (!h) { delete estado.suave[a.id]; continue; }
-    let q = proyectarCuadrilatero(h, a.quad);
+    let h = H[a.plano], base = a.quad, aprox = false;
+    if (!h && a.plano === 'C' && H.B) { h = H.B; base = a.quadAprox; aprox = true; } // mesa sin reconocer: se estima con la base
+    if (!h || !base) { delete estado.suave[a.id]; continue; }
+    let q = proyectarCuadrilatero(h, base);
     if (a.plano === 'A' && estado.ajusteMat) {
       const aj = ajustarCuadrilatero(estado.ajusteMat.data, estado.ajusteMat.cols, estado.ajusteMat.rows, q);
       estado.stats.ajuste = aj ? 'ok' : 'sin borde';
@@ -211,8 +212,9 @@ function actualizarQuads(ahora) {
     }
     if (!cuadrilateroValido(q, estado.anchoCuadro, estado.anchoCuadro * 2)) { delete estado.suave[a.id]; continue; }
     const prev = estado.suave[a.id];
-    const lejos = prev && q.some(([x, y], i) => Math.hypot(x - prev[i][0], y - prev[i][1]) > salto);
-    estado.suave[a.id] = !prev || lejos ? q : q.map(([x, y], i) => [prev[i][0] + SUAVIZADO * (x - prev[i][0]), prev[i][1] + SUAVIZADO * (y - prev[i][1])]);
+    const lejos = prev && (prev.aprox !== aprox || q.some(([x, y], i) => Math.hypot(x - prev.q[i][0], y - prev.q[i][1]) > salto));
+    const nuevo = !prev || lejos ? q : q.map(([x, y], i) => [prev.q[i][0] + SUAVIZADO * (x - prev.q[i][0]), prev.q[i][1] + SUAVIZADO * (y - prev.q[i][1])]);
+    estado.suave[a.id] = { q: nuevo, aprox };
   }
 }
 
@@ -241,15 +243,16 @@ const fmt = (x) => (x == null ? '-' : x.toFixed(2));
 function dibujar() {
   ctx.clearRect(0, 0, innerWidth, innerHeight);
   const pant = aPantalla();
-  estado.pantalla = estado.areas.filter((a) => estado.suave[a.id]).map((a) => ({ id: a.id, poli: estado.suave[a.id].map(pant) }));
+  estado.pantalla = estado.areas.filter((a) => estado.suave[a.id]).map((a) => ({ id: a.id, aprox: estado.suave[a.id].aprox, poli: estado.suave[a.id].q.map(pant) }));
   $('mensaje').hidden = estado.pantalla.length > 0;
   if (!estado.pantalla.length) $('mensaje').textContent = 'Apuntá la cámara a la vitrina';
   for (const v of estado.pantalla) {
     const color = { A: '#7bd88f', B: '#ffc857', C: '#ff9f6b' }[planoDe(v.id)];
     ctx.lineWidth = 3; ctx.strokeStyle = color; ctx.fillStyle = color + '22';
+    ctx.setLineDash(v.aprox ? [8, 6] : []); // línea punteada: posición estimada, menos precisa
     ctx.beginPath();
     v.poli.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
     ctx.font = '600 13px system-ui, sans-serif';
     const [x, y] = v.poli[0], t = titulo(v.id), w = ctx.measureText(t).width + 10;
     ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(x, y - 20, w, 20);

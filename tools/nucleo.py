@@ -27,8 +27,10 @@ MAX_PUNTOS_CUADRO = None   # tope propio para el cuadro; si es None se usa MAX_P
 POLI_A = np.float32([[352, 25], [1040, 25], [1040, 502], [352, 502]])
 # B: la plataforma blanca con las tarjetas (más alta que la mesa de madera: no son el mismo plano)
 POLI_B = np.float32([[270, 645], [800, 645], [805, 1160], [195, 1160]])
-# C: la mesa de madera con el nido, los nidos de barro, la rama y la hoja
-POLI_C = np.float32([[825, 705], [1355, 705], [1355, 1150], [825, 1150]])
+# C: la mesa de madera con el nido, los nidos de barro, la rama y la hoja. Se registra contra una
+# foto de referencia propia (foto7, de arriba) y sus coordenadas son las de esa foto, no las de la base.
+REF_MESA = "pruebas/foto7.jpeg"
+POLI_C = np.float32([[10, 705], [550, 705], [550, 1185], [10, 1185]])
 POLIS = {"A": POLI_A, "B": POLI_B, "C": POLI_C}
 PLANOS = ("A", "B", "C")
 
@@ -43,6 +45,7 @@ def cargar_areas(poligonos=True, exterior=False):
         with open(os.path.join(REF, "areas_poligonos.json"), encoding="utf-8") as f:
             d = json.load(f)
         extra = dict(d["poligonos"])
+        extra.update(d["mesa"]["poligonos"])  # coordenadas de la foto de la mesa, no de la base
         if exterior:
             extra.update(d["marco_exterior"])
     for a in areas:

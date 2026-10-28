@@ -15,6 +15,7 @@ const GRUESO = 300;                 // puntos usados en la búsqueda rápida ent
 const CANDIDATAS = 4;               // vistas que pasan de la búsqueda rápida al ajuste fino
 const PALABRAS = 16;
 const REFS_BASE = ['base', 'base640', 'base420']; // vistas derivadas de la foto base, a distintas escalas
+const REF_MESA = 'foto7.jpeg'; // raíz del plano C: foto de la mesa tomada desde arriba
 
 export function cargarOpenCV() {
   // En esta compilación el módulo `cv` tiene un `then` que se resuelve a sí mismo: devolverlo
@@ -152,7 +153,7 @@ export class Reconocedor {
     }
     // La mesa de madera (C): misma estrategia, con la vista que sirvió para la base como candidata.
     const refB = salida.B ? salida.B.ref : refA;
-    const prioriC = [...new Set([refB, refA, ...REFS_BASE].filter(Boolean))];
+    const prioriC = [...new Set([REF_MESA, refB, refA].filter(Boolean))];
     salida.C = this.detectarPlano('C', normal, prioriC);
     if ((!salida.C || salida.C.inliers < MIN_B) && cuadro.n > PUNTOS_NORMAL) {
       const r = this.detectarPlano('C', cuadro, prioriC);
@@ -161,7 +162,7 @@ export class Reconocedor {
     // Comprobación de la base y de la mesa: si los bordes no coinciden con los de la foto base, la
     // alineación está corrida (paneles repetidos) y se descarta aunque tenga muchas coincidencias.
     if (this.verificador) {
-      for (const pl of ['B', 'C']) {
+      for (const pl of ['B']) { // la mesa (C) usa otra foto de referencia: sin comprobación por bordes
         const r = salida[pl];
         if (!r) continue;
         const ncc = this.verificador.puntaje(cuadro.gris, r.H, pl);

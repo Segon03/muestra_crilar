@@ -72,7 +72,7 @@ export const PLANOS = ['A', 'B', 'C'];
 export const ESQUINAS = {
   A: [[352, 25], [1040, 25], [1040, 502], [352, 502]],
   B: [[270, 650], [830, 650], [830, 1100], [270, 1100]], // zona de las tarjetas: de cerca, el plano entero cruza el horizonte y deja de ser convexo
-  C: [[850, 730], [1330, 730], [1330, 1130], [850, 1130]], // mesa de madera
+  C: [[10, 705], [550, 705], [550, 1185], [10, 1185]], // mesa de madera, en coordenadas de su foto de referencia (foto7)
 };
 
 // Distancia media (px del cuadro) entre las esquinas de un plano proyectadas con dos homografías.

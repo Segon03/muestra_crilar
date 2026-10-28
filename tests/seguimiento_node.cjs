@@ -11,7 +11,7 @@ const W = 480, H = 854, TAM = W * H * 4;
 (async () => {
   const { Reconocedor, umbralFuerte } = await import(path.join(raiz, 'src/vision.js'));
   const { Seguidor, Rastreo } = await import(path.join(raiz, 'src/seguimiento.js'));
-  const { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, planoDe } = await import(path.join(raiz, 'src/geometria.js'));
+  const { proyectarCuadrilatero, cuadrilateroValido } = await import(path.join(raiz, 'src/geometria.js'));
   await new Promise((r) => { if (cv.Mat) r(); else cv.onRuntimeInitialized = r; });
   cv.then = undefined;
   const meta = JSON.parse(fs.readFileSync(path.join(raiz, 'datos/banco_akaze.json')));
@@ -22,7 +22,10 @@ const W = 480, H = 854, TAM = W * H * 4;
   const { Verificador } = await import(path.join(raiz, 'src/verificacion.js'));
   if (!process.env.SIN_VERIFICACION) rec.verificador = new Verificador(cv, new Uint8Array(fs.readFileSync(path.join(raiz, 'datos/base_gris.bin'))), JSON.parse(fs.readFileSync(path.join(raiz, 'referencias/areas_poligonos.json'))).poligonos);
   const seg = new Seguidor(cv), ras = new Rastreo(seg, W);
-  const areas = JSON.parse(fs.readFileSync(path.join(raiz, 'referencias/areas.json'))).areas;
+  const { armarAreas } = await import(path.join(raiz, 'src/areas.js'));
+  const polis = JSON.parse(fs.readFileSync(path.join(raiz, 'referencias/areas_poligonos.json')));
+  const bancoC = meta.planos.some((p) => p.plano === 'C' && p.ref === 'foto7.jpeg');
+  const areas = armarAreas(JSON.parse(fs.readFileSync(path.join(raiz, 'referencias/areas.json'))), polis, bancoC);
   const gt = JSON.parse(fs.readFileSync(path.join(raiz, 'tests/gt_video_muestra2.json')));
   const gtPorCuadro = new Map(gt.cuadros.map((c) => [Math.round((c.frame / 30) * FPS), c]));
   const iou = (a, b2) => { const ix = Math.max(0, Math.min(a[2], b2[2]) - Math.max(a[0], b2[0])), iy = Math.max(0, Math.min(a[3], b2[3]) - Math.max(a[1], b2[1])); const i = ix * iy; const u = (a[2] - a[0]) * (a[3] - a[1]) + (b2[2] - b2[0]) * (b2[3] - b2[1]) - i; return u > 0 ? i / u : 0; };
@@ -33,9 +36,11 @@ const W = 480, H = 854, TAM = W * H * 4;
   const medir = (c, homografias, destino) => {
     for (const a of areas) {
       const g = c.cajas[a.id]; if (!g) continue;
-      const Hh = homografias[planoDe(a.id)]; let v = 0, proy = 0;
-      if (Hh) { const q = proyectarCuadrilatero(Hh, cajaACuadrilatero(a.bbox_px)); if (cuadrilateroValido(q, W, H)) { proy = 1; const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]); v = iou([Math.max(0, Math.min(...xs)), Math.max(0, Math.min(...ys)), Math.min(W, Math.max(...xs)), Math.min(H, Math.max(...ys))], g); } }
-      destino.push({ v, proy });
+      let Hh = homografias[a.plano], base = a.quad;
+      if (!Hh && a.plano === 'C' && homografias.B) { Hh = homografias.B; base = a.quadAprox; } // como la app: mesa sin reconocer -> base
+      let v = 0, proy = 0;
+      if (Hh && base) { const q = proyectarCuadrilatero(Hh, base); if (cuadrilateroValido(q, W, H)) { proy = 1; const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]); v = iou([Math.max(0, Math.min(...xs)), Math.max(0, Math.min(...ys)), Math.min(W, Math.max(...xs)), Math.min(H, Math.max(...ys))], g); } }
+      destino.push({ v, proy, id: a.id });
     }
   };
   let tTrack = 0, nTrack = 0, tDet = 0, nDet = 0;
@@ -68,6 +73,7 @@ const W = 480, H = 854, TAM = W * H * 4;
   ff.stderr.on('data', (d) => process.stderr.write(d));
   await new Promise((r) => ff.on('close', r));
   const resumen = (v) => `proyectadas ${(100 * v.filter((x) => x.proy).length / v.length).toFixed(1)}%  IoU medio ${(v.reduce((s, x) => s + x.v, 0) / v.length).toFixed(2)}  IoU>=0.5 ${(100 * v.filter((x) => x.v >= 0.5).length / v.length).toFixed(1)}%  (${v.length} cajas)`;
+  { const por = {}; for (const x of res.seg) (por[x.id] = por[x.id] || []).push(x); const f = Object.keys(por).sort().map((id) => { const pr = por[id].filter((x) => x.proy); return `${id.slice(0, 2)}:${pr.length ? (pr.reduce((a, x) => a + x.v, 0) / pr.length).toFixed(2) : '-'}`; }); console.log('IoU medio por área (cuando se proyecta):', f.join('  ')); }
   console.log(`cuadros: ${i}  fps simulados: ${FPS}  detección cada ${CADA}, latencia ${LAT}`);
   console.log('con seguimiento :', resumen(res.seg));
   console.log('detección sola  :', resumen(res.sin));

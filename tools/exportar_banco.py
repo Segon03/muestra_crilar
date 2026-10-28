@@ -39,7 +39,7 @@ def main():
     banco = comparar.cargar_banco("akaze", True)
     base = cv2.imread(os.path.join(n.REF, "vitrina_base.jpg"))
     for ancho in ANCHOS_BASE_EXTRA:
-        banco.append(n.Referencia(f"base{ancho}", base, "akaze", np.eye(3), np.eye(3), ancho=ancho, HC=np.eye(3)))
+        banco.append(n.Referencia(f"base{ancho}", base, "akaze", np.eye(3), np.eye(3), ancho=ancho))
     os.makedirs(SALIDA, exist_ok=True)
     planos, bloques, off = [], [], 0
     for ref in banco:

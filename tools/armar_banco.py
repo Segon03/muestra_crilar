@@ -160,7 +160,10 @@ def main():
     base = cv2.imread(os.path.join(n.REF, "vitrina_base.jpg"))
     I = np.eye(3)
     anclas = Anclas()
-    anclas.agregar("base", base, {pl: I for pl in n.PLANOS})
+    anclas.agregar("base", base, {"A": I, "B": I})
+    # raíz del plano C (mesa): la foto de referencia de la mesa, en sus propias coordenadas
+    img_mesa = cv2.imread(os.path.join(n.REF, n.REF_MESA))
+    anclas.agregar("raiz_mesa", img_mesa, {"C": I})
 
     cands = [(os.path.basename(f), cv2.imread(f)) for f in FOTOS]
     cap = cv2.VideoCapture(VIDEO)
@@ -218,7 +221,7 @@ def main():
     for f in os.listdir(SALIDA):
         os.remove(os.path.join(SALIDA, f))
     cv2.imwrite(os.path.join(SALIDA, "base.jpg"), base, [cv2.IMWRITE_JPEG_QUALITY, 90])
-    entradas = [{"nombre": "base", "archivo": "base.jpg", "HA": I.tolist(), "HB": I.tolist(), "HC": I.tolist()}]
+    entradas = [{"nombre": "base", "archivo": "base.jpg", "HA": I.tolist(), "HB": I.tolist(), "HC": None}]
     for nom, r in elegidas.items():
         arch = nom.replace(".jpg", "") + ".jpg"
         cv2.imwrite(os.path.join(SALIDA, arch), r["img"], [cv2.IMWRITE_JPEG_QUALITY, 90])

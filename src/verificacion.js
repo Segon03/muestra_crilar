@@ -5,9 +5,9 @@
 // está corrida. (Mismos parámetros que el prototipo de Python.)
 export const ESCALA = 0.25;        // la foto base se reduce a 400x300
 export const ANCHO = 400, ALTO = 300;
-export const NCC_MIN = { B: 0.2, C: 0.15 }; // por debajo, la alineación del plano se descarta
+export const NCC_MIN = { B: 0.2 }; // por debajo, la alineación del plano se descarta
 // zonas que se comparan en cada plano (prefijos de id de área)
-const ZONAS = { B: ['02', '03', '04', '05', '06', '07'], C: ['09', '10', '11'] };
+const ZONAS = { B: ['02', '03', '04', '05', '06', '07'] };
 
 export class Verificador {
   // baseGris: bytes 400x300; poligonos: {id: [[x,y]x4]} de referencias/areas_poligonos.json
