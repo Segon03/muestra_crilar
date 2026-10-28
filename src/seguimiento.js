@@ -1,6 +1,6 @@
 // Seguimiento entre detecciones: flujo óptico Lucas-Kanade sobre los puntos que dieron la
 // homografía, más la lógica de qué detecciones se aceptan y cuándo se pierde un plano.
-import { multiplicar, cuadrilateroValido, proyectarCuadrilatero, distanciaHomografias, ESQUINAS } from './geometria.js';
+import { multiplicar, cuadrilateroValido, proyectarCuadrilatero, distanciaHomografias, ESQUINAS, PLANOS } from './geometria.js';
 import { umbralFuerte, MIN_DEBIL } from './vision.js';
 
 const MIN_PUNTOS = 10;          // por debajo de esto el plano se da por perdido
@@ -91,12 +91,12 @@ export class Rastreo {
   constructor(seguidor, ancho) {
     this.seg = seguidor;
     this.ancho = ancho;
-    this.planos = { A: null, B: null };
+    this.planos = { A: null, B: null, C: null };
   }
 
   // Avanza un cuadro: sigue los puntos de cada plano de `prev` a `cur`.
   avanzar(prev, cur, ahora) {
-    for (const pl of ['A', 'B']) {
+    for (const pl of PLANOS) {
       const e = this.planos[pl];
       if (!e) continue;
       const p = this.seg.paso(prev, cur, e.pts);
@@ -110,7 +110,7 @@ export class Rastreo {
       }
       if (ahora - e.vivo > 300) this.planos[pl] = null; // un fallo suelto se tolera un instante
     }
-    for (const pl of ['A', 'B']) {
+    for (const pl of PLANOS) {
       const e = this.planos[pl];
       if (e && !e.confirmado && ahora - e.desde > CONFIRMAR_MS) this.planos[pl] = null;
     }
@@ -123,7 +123,7 @@ export class Rastreo {
 
   // Incorpora el resultado de una detección hecha sobre `grisDet` cuando el cuadro actual es `gris`.
   recibir(det, grisDet, gris, ahora) {
-    for (const pl of ['A', 'B']) {
+    for (const pl of PLANOS) {
       const r = det[pl];
       if (!r || r.inliers < MIN_DEBIL || !r.pts || r.pts.length < 2 * MIN_PUNTOS) continue;
       let H = r.H, pts = r.pts;
@@ -148,8 +148,8 @@ export class Rastreo {
 
   // Homografías a mostrar: confirmadas y vistas hace poco.
   vigentes(ahora, perdidaMs) {
-    const out = { A: null, B: null };
-    for (const pl of ['A', 'B']) {
+    const out = { A: null, B: null, C: null };
+    for (const pl of PLANOS) {
       const e = this.planos[pl];
       if (e && e.confirmado && ahora - e.vivo < perdidaMs) out[pl] = e.H;
     }

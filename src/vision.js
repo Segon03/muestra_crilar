@@ -52,13 +52,13 @@ function recortar(c, m) {
 }
 
 // Coincidencias necesarias para dar un plano por reconocido sin esperar confirmación.
-export const umbralFuerte = (pl) => (pl === 'B' ? MIN_B : MIN_INLIERS);
+export const umbralFuerte = (pl) => (pl === 'A' ? MIN_INLIERS : MIN_B);
 
 export class Reconocedor {
   constructor(cv, banco) {
     this.cv = cv;
     this.banco = banco;
-    this.ultimo = { A: null, B: null }; // última vista con la que se reconoció cada plano
+    this.ultimo = { A: null, B: null, C: null }; // última vista con la que se reconoció cada plano
     if (!cv.AKAZE) throw new Error('Esta compilación de OpenCV.js no incluye AKAZE');
     try { this.akaze = new cv.AKAZE(); } catch (e) { this.akaze = cv.AKAZE.create(); }
     if (this.akaze.setThreshold) this.akaze.setThreshold(0.0005);
@@ -136,7 +136,7 @@ export class Reconocedor {
   }
 
   detectarCuadro(cuadro) {
-    const salida = { A: null, B: null, puntos: cuadro.pts, n: cuadro.n };
+    const salida = { A: null, B: null, C: null, puntos: cuadro.pts, n: cuadro.n };
     const normal = recortar(cuadro, PUNTOS_NORMAL);
     salida.A = this.detectarPlano('A', normal, null);
     // La caja (A) se reconoce a más distancia que la base (B): la vista del banco que sirvió para A
@@ -150,15 +150,27 @@ export class Reconocedor {
       const r = this.detectarPlano('B', cuadro, priori);
       if (r && (!salida.B || r.inliers > salida.B.inliers)) salida.B = r;
     }
-    // Comprobación de la base: si los bordes no coinciden con los de la foto base, la alineación
-    // está corrida (paneles repetidos) y se descarta aunque tenga muchas coincidencias.
-    if (salida.B && this.verificador) {
-      const ncc = this.verificador.puntaje(cuadro.gris, salida.B.H);
-      salida.B.ncc = ncc;
-      if (ncc !== null && ncc < NCC_MIN) {
-        this.ultimo.B = null;
-        salida.Brechazada = { inliers: salida.B.inliers, ncc };
-        salida.B = null;
+    // La mesa de madera (C): misma estrategia, con la vista que sirvió para la base como candidata.
+    const refB = salida.B ? salida.B.ref : refA;
+    const prioriC = [...new Set([refB, refA, ...REFS_BASE].filter(Boolean))];
+    salida.C = this.detectarPlano('C', normal, prioriC);
+    if ((!salida.C || salida.C.inliers < MIN_B) && cuadro.n > PUNTOS_NORMAL) {
+      const r = this.detectarPlano('C', cuadro, prioriC);
+      if (r && (!salida.C || r.inliers > salida.C.inliers)) salida.C = r;
+    }
+    // Comprobación de la base y de la mesa: si los bordes no coinciden con los de la foto base, la
+    // alineación está corrida (paneles repetidos) y se descarta aunque tenga muchas coincidencias.
+    if (this.verificador) {
+      for (const pl of ['B', 'C']) {
+        const r = salida[pl];
+        if (!r) continue;
+        const ncc = this.verificador.puntaje(cuadro.gris, r.H, pl);
+        r.ncc = ncc;
+        if (ncc !== null && ncc < NCC_MIN[pl]) {
+          this.ultimo[pl] = null;
+          (salida.rechazadas = salida.rechazadas || {})[pl] = { inliers: r.inliers, ncc };
+          salida[pl] = null;
+        }
       }
     }
     return salida;

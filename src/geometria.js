@@ -63,13 +63,16 @@ export function contiene(poli, x, y) {
 }
 
 export function planoDe(id) {
-  return id.startsWith('01_') ? 'A' : 'B';
+  if (id.startsWith('01_')) return 'A';
+  return ['09', '10', '11'].includes(id.slice(0, 2)) ? 'C' : 'B'; // la mesa de madera (C) está más baja que la plataforma de las tarjetas (B)
 }
 
 // Esquinas de cada plano sobre vitrina_base.jpg (1600x1200); sirven para comparar homografías.
+export const PLANOS = ['A', 'B', 'C'];
 export const ESQUINAS = {
   A: [[352, 25], [1040, 25], [1040, 502], [352, 502]],
   B: [[270, 650], [830, 650], [830, 1100], [270, 1100]], // zona de las tarjetas: de cerca, el plano entero cruza el horizonte y deja de ser convexo
+  C: [[850, 730], [1330, 730], [1330, 1130], [850, 1130]], // mesa de madera
 };
 
 // Distancia media (px del cuadro) entre las esquinas de un plano proyectadas con dos homografías.

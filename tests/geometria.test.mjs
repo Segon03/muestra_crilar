@@ -17,7 +17,9 @@ assert.ok(cuadrilateroValido(proyectarCuadrilatero(T, cuadro), 480, 640));
 assert.ok(!cuadrilateroValido([[0, 0], [100, 100], [100, 0], [0, 100]], 480, 640), 'cuadrilátero cruzado');
 assert.ok(!cuadrilateroValido([[0, 0], [1, 0], [1, 1], [0, 1]], 480, 640), 'demasiado chico');
 assert.equal(planoDe('01_caja_entomologica_superior'), 'A');
-assert.equal(planoDe('11_rama_oncideres'), 'B');
+assert.equal(planoDe('11_rama_oncideres'), 'C');
+assert.equal(planoDe('09_panal_avispa'), 'C');
+assert.equal(planoDe('04_himenopteros'), 'B');
 
 // emparejar: un descriptor idéntico se empareja, uno ambiguo no
 const a = new Uint32Array(16).fill(0xffff0000);

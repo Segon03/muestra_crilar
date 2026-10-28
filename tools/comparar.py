@@ -39,7 +39,8 @@ def cargar_banco(detector, usar_banco):
         img = cv2.imread(os.path.join(n.REF, "banco", e["archivo"]))
         HA = np.array(e["HA"]) if e.get("HA") else None
         HB = np.array(e["HB"]) if e.get("HB") else None
-        out.append(n.Referencia(e["nombre"], img, detector, HA, HB))
+        HC = np.array(e["HC"]) if e.get("HC") else None
+        out.append(n.Referencia(e["nombre"], img, detector, HA, HB, HC=HC))
     return out
 
 
@@ -74,7 +75,7 @@ def evaluar_video(detector, usar_banco, areas):
     t0 = time.time()
     rec = n.Reconocedor(detector, cargar_banco(detector, usar_banco))
     t_banco = time.time() - t0
-    reconocidos = {"A": 0, "B": 0}
+    reconocidos = {"A": 0, "B": 0, "C": 0}
     gt_frames = {c["frame"]: c for c in gt["cuadros"]}
     ious, t_det, por_cuadro = [], [], {}
     for fi, img in cuadros.items():
@@ -83,7 +84,7 @@ def evaluar_video(detector, usar_banco, areas):
         res = rec.reconocer(img)
         t_det.append(time.time() - t0)
         quads = n.proyectar(areas, res, tam)
-        for pl in "AB":
+        for pl in "ABC":
             if any(n.plano_de(a) == pl for a in quads):
                 reconocidos[pl] += 1
         if fi in gt_frames:

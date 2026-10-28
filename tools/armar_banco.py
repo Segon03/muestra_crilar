@@ -83,9 +83,10 @@ class Anclas:
     def __init__(self):
         self.lista = []
 
-    def agregar(self, nombre, img, HA, HB):
-        e = {"nombre": nombre, "img": img, "H": {"A": HA, "B": HB}, "f": {}}
-        for pl, poli in (("A", n.POLI_A), ("B", n.POLI_B)):
+    def agregar(self, nombre, img, Hs):
+        """Hs: {plano: H base->imagen o None}."""
+        e = {"nombre": nombre, "img": img, "H": {pl: Hs.get(pl) for pl in n.PLANOS}, "f": {}}
+        for pl, poli in n.POLIS.items():
             H = e["H"][pl]
             if H is None:
                 continue
@@ -100,7 +101,7 @@ class Anclas:
         tam = (img.shape[1], img.shape[0])
         mejor = {}
         for e in self.lista:
-            for pl, poli in (("A", n.POLI_A), ("B", n.POLI_B)):
+            for pl, poli in n.POLIS.items():
                 if pl not in e["f"]:
                     continue
                 pa, da = e["f"][pl]
@@ -125,7 +126,7 @@ def elegir(regs, pl, k):
     cand = [r for r in regs if pl in r["res"]]
     if not cand:
         return []
-    poli = n.POLI_A if pl == "A" else n.POLI_B
+    poli = n.POLIS[pl]
     F = np.array([firma(r["res"][pl][0], poli, r["tam"]) for r in cand])
     sel = [int(np.argmax([r["res"][pl][1] for r in cand]))]
     while len(sel) < min(k, len(cand)):
@@ -159,7 +160,7 @@ def main():
     base = cv2.imread(os.path.join(n.REF, "vitrina_base.jpg"))
     I = np.eye(3)
     anclas = Anclas()
-    anclas.agregar("base", base, I, I)
+    anclas.agregar("base", base, {pl: I for pl in n.PLANOS})
 
     cands = [(os.path.basename(f), cv2.imread(f)) for f in FOTOS]
     cap = cv2.VideoCapture(VIDEO)
@@ -186,7 +187,7 @@ def main():
             pendientes.remove(ci)
             nuevos += 1
             # sólo se usan como ancla las vistas registradas con buena evidencia
-            anclas.agregar(nom, img, res.get("A", (None,))[0], res.get("B", (None,))[0])
+            anclas.agregar(nom, img, {pl: v[0] for pl, v in res.items()})
             print(f"  ronda {ronda} {nom}: " + ", ".join(f"{p}={v[1]} ({v[2]})" for p, v in res.items()), flush=True)
         print(f"ronda {ronda}: {nuevos} nuevos, quedan {len(pendientes)}")
         if nuevos == 0:
@@ -207,7 +208,7 @@ def main():
     print("no registrados:", [cands[c][0] for c in pendientes])
     lista = list(regs.values())
     elegidas = {}
-    for pl in ("A", "B"):
+    for pl in n.PLANOS:
         for r in elegir(lista, pl, args.n):
             elegidas.setdefault(r["nombre"], r)
     for r in lista:
@@ -217,12 +218,12 @@ def main():
     for f in os.listdir(SALIDA):
         os.remove(os.path.join(SALIDA, f))
     cv2.imwrite(os.path.join(SALIDA, "base.jpg"), base, [cv2.IMWRITE_JPEG_QUALITY, 90])
-    entradas = [{"nombre": "base", "archivo": "base.jpg", "HA": I.tolist(), "HB": I.tolist()}]
+    entradas = [{"nombre": "base", "archivo": "base.jpg", "HA": I.tolist(), "HB": I.tolist(), "HC": I.tolist()}]
     for nom, r in elegidas.items():
         arch = nom.replace(".jpg", "") + ".jpg"
         cv2.imwrite(os.path.join(SALIDA, arch), r["img"], [cv2.IMWRITE_JPEG_QUALITY, 90])
         e = {"nombre": nom, "archivo": arch, "inliers": {p: v[1] for p, v in r["res"].items()}}
-        for pl in ("A", "B"):
+        for pl in n.PLANOS:
             e["H" + pl] = r["res"][pl][0].tolist() if pl in r["res"] else None
         entradas.append(e)
     with open(os.path.join(SALIDA, "banco.json"), "w", encoding="utf-8") as fh:

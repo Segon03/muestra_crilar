@@ -56,7 +56,7 @@ const W = 480, H = 854, TAM = W * H * 4;
       // referencia: detección directa sobre este cuadro, sin seguimiento (como la Fase 2)
       rec.ultimo = { A: null, B: null };
       const d = rec.detectar(img);
-      medir(c, { A: d.A && d.A.inliers >= umbralFuerte('A') ? d.A.H : null, B: d.B && d.B.inliers >= umbralFuerte('B') ? d.B.H : null }, res.sin);
+      medir(c, { A: d.A && d.A.inliers >= umbralFuerte('A') ? d.A.H : null, B: d.B && d.B.inliers >= umbralFuerte('B') ? d.B.H : null, C: d.C && d.C.inliers >= umbralFuerte('C') ? d.C.H : null }, res.sin);
     }
     if (prev) prev.delete();
     prev = gris; i++;

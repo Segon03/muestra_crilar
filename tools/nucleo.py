@@ -25,7 +25,12 @@ MAX_PUNTOS_CUADRO = None   # tope propio para el cuadro; si es None se usa MAX_P
 
 # Polígonos de cada plano sobre vitrina_base.jpg (px de la foto de 1600x1200)
 POLI_A = np.float32([[352, 25], [1040, 25], [1040, 502], [352, 502]])
-POLI_B = np.float32([[200, 640], [1380, 640], [1380, 1165], [195, 1165]])
+# B: la plataforma blanca con las tarjetas (más alta que la mesa de madera: no son el mismo plano)
+POLI_B = np.float32([[270, 645], [800, 645], [805, 1160], [195, 1160]])
+# C: la mesa de madera con el nido, los nidos de barro, la rama y la hoja
+POLI_C = np.float32([[825, 705], [1355, 705], [1355, 1150], [825, 1150]])
+POLIS = {"A": POLI_A, "B": POLI_B, "C": POLI_C}
+PLANOS = ("A", "B", "C")
 
 
 def cargar_areas(poligonos=True, exterior=False):
@@ -51,7 +56,9 @@ def caja_a_quad(b):
 
 
 def plano_de(area_id):
-    return "A" if area_id.startswith("01_") else "B"
+    if area_id.startswith("01_"):
+        return "A"
+    return "C" if area_id[:2] in ("09", "10", "11") else "B"
 
 
 def crear_detector(nombre):
@@ -105,7 +112,7 @@ class Plano:
 
 
 class Referencia:
-    def __init__(self, nombre, img, detector, HA=None, HB=None, ancho=ANCHO_REF):
+    def __init__(self, nombre, img, detector, HA=None, HB=None, ancho=ANCHO_REF, HC=None):
         """HA/HB llevan coordenadas de vitrina_base.jpg (1600x1200) a la imagen
         original de la referencia. None = ese plano no se ve."""
         self.nombre = nombre
@@ -113,7 +120,7 @@ class Referencia:
         small, s = reducir(img, min(ancho, img.shape[1]))
         gris = a_gris(small)
         det = crear_detector(detector)
-        for pl, H, poli in (("A", HA, POLI_A), ("B", HB, POLI_B)):
+        for pl, H, poli in (("A", HA, POLI_A), ("B", HB, POLI_B), ("C", HC, POLI_C)):
             if H is None:
                 continue
             Hs = escala_h(s) @ H

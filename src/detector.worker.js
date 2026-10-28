@@ -20,7 +20,7 @@ self.onmessage = async (e) => {
       const t0 = performance.now();
       const img = new ImageData(new Uint8ClampedArray(m.buf), m.ancho, m.alto);
       const r = reconocedor.detectar(img);
-      const salida = { tipo: 'resultado', id: m.id, A: r.A, B: r.B, Brechazada: r.Brechazada, puntos: r.puntos, n: r.n, ms: performance.now() - t0 };
+      const salida = { tipo: 'resultado', id: m.id, A: r.A, B: r.B, C: r.C, rechazadas: r.rechazadas, puntos: r.puntos, n: r.n, ms: performance.now() - t0 };
       self.postMessage(salida, [r.puntos.buffer]);
     }
   } catch (err) {

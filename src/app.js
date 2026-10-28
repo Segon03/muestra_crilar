@@ -32,7 +32,10 @@ async function iniciar() {
       fetch('referencias/areas_poligonos.json').then((r) => r.json()).catch(() => ({ poligonos: {} })), // si falta, se usan los rectángulos
       fetch('contenido/contenidos.json').then((r) => r.json()).catch(() => ({ areas: {} })),
     ]);
-    estado.areas = areas.areas.map((a) => ({ id: a.id, plano: planoDe(a.id), quad: poligonos.poligonos[a.id] || cajaACuadrilatero(a.bbox_px) }));
+    // si el banco todavía no trae vistas de la mesa (plano C), esas áreas se siguen con la base (B)
+    const hayC = await fetch('datos/banco_akaze.json').then((r) => r.json()).then((m) => m.planos.some((p) => p.plano === 'C')).catch(() => false);
+    const planoArea = (id) => { const p = planoDe(id); return p === 'C' && !hayC ? 'B' : p; };
+    estado.areas = areas.areas.map((a) => ({ id: a.id, plano: planoArea(a.id), quad: poligonos.poligonos[a.id] || cajaACuadrilatero(a.bbox_px) }));
     estado.contenidos = contenidos.areas || {};
     $('estado').textContent = 'Cargando visión por computadora…';
     const cv = await esperarOpenCV();
@@ -133,7 +136,7 @@ function cuadro(ahora) {
   if (ventanaAbierta()) { estado.pausado = true; return; } // con la ventana abierta no se detecta ni se sigue (ahorra batería)
   if (estado.pausado) { // al cerrar la ventana el cuadro anterior quedó viejo: se empieza de cero
     estado.pausado = false;
-    estado.rastreo.planos = { A: null, B: null };
+    estado.rastreo.planos = { A: null, B: null, C: null };
     estado.suave = {};
     estado.prevGris?.delete(); estado.prevGris = null;
   }
@@ -159,7 +162,7 @@ function cuadro(ahora) {
       const r = estado.reconocedor.detectar(img);
       estado.stats.det = performance.now() - t0;
       estado.puntos = r.puntos; estado.stats.n = r.n;
-      estado.stats.ncc = r.B ? r.B.ncc : undefined; estado.stats.rechazo = r.Brechazada || null;
+      estado.stats.ncc = { B: r.B ? r.B.ncc : undefined, C: r.C ? r.C.ncc : undefined }; estado.stats.rechazo = r.rechazadas || null;
       estado.rastreo.recibir(r, gris, gris, ahora);
     }
     estado.prevGris?.delete();
@@ -188,7 +191,7 @@ function alResultado(e) {
   estado.enVuelo = false;
   if (estado.pausado || ventanaAbierta()) return; // resultado de antes de abrir la ventana
   estado.puntos = m.puntos; estado.stats.n = m.n; estado.stats.det = m.ms;
-  estado.stats.ncc = m.B ? m.B.ncc : undefined; estado.stats.rechazo = m.Brechazada || null;
+  estado.stats.ncc = { B: m.B ? m.B.ncc : undefined, C: m.C ? m.C.ncc : undefined }; estado.stats.rechazo = m.rechazadas || null;
   if (estado.grisEnviado && estado.prevGris) estado.rastreo.recibir(m, estado.grisEnviado, estado.prevGris, performance.now());
 }
 
@@ -233,6 +236,8 @@ function aPantalla() {
 
 const titulo = (id) => estado.contenidos[id]?.titulo || id.replace(/^\d+_/, '').replace(/_/g, ' ');
 
+const fmt = (x) => (x == null ? '-' : x.toFixed(2));
+
 function dibujar() {
   ctx.clearRect(0, 0, innerWidth, innerHeight);
   const pant = aPantalla();
@@ -240,7 +245,7 @@ function dibujar() {
   $('mensaje').hidden = estado.pantalla.length > 0;
   if (!estado.pantalla.length) $('mensaje').textContent = 'Apuntá la cámara a la vitrina';
   for (const v of estado.pantalla) {
-    const color = planoDe(v.id) === 'A' ? '#7bd88f' : '#ffc857';
+    const color = { A: '#7bd88f', B: '#ffc857', C: '#ff9f6b' }[planoDe(v.id)];
     ctx.lineWidth = 3; ctx.strokeStyle = color; ctx.fillStyle = color + '22';
     ctx.beginPath();
     v.poli.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
@@ -261,8 +266,8 @@ function dibujar() {
     const s = estado.stats, p = estado.rastreo.planos;
     const fila = (pl) => (p[pl] ? `${p[pl].confirmado ? 'ok' : 'tentativo'}, ${p[pl].inliers} inliers, ${p[pl].pts.length / 2} seguidos (${p[pl].ref})` : '-');
     $('debug').textContent = `${s.modo}  ancho ${ANCHO_TRABAJO}  ${s.fps.toFixed(0)} cuadros/s\n` +
-      `detección: ${s.det.toFixed(0)} ms   puntos: ${s.n}   ajuste de borde: ${s.ajuste || '-'}\nplano A: ${fila('A')}\nplano B: ${fila('B')}\n` +
-      `base: parecido de bordes ${s.ncc == null ? '-' : s.ncc.toFixed(2)}${s.rechazo ? `  (última rechazada: ${s.rechazo.inliers} inliers, parecido ${s.rechazo.ncc.toFixed(2)})` : ''}`;
+      `detección: ${s.det.toFixed(0)} ms   puntos: ${s.n}   ajuste de borde: ${s.ajuste || '-'}\nplano A: ${fila('A')}\nplano B: ${fila('B')}\nplano C: ${fila('C')}\n` +
+      `parecido de bordes: base ${fmt(s.ncc?.B)}  mesa ${fmt(s.ncc?.C)}${s.rechazo ? '  (rechazadas: ' + Object.entries(s.rechazo).map(([p, x]) => `${p} ${x.inliers} inl., ${x.ncc.toFixed(2)}`).join('; ') + ')' : ''}`;
   }
 }
 
