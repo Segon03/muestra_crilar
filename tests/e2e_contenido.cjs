@@ -45,7 +45,8 @@ const ejemplo = {
   assert.equal(await p.$eval('#modal', (e) => e.hidden), true);
   assert.equal(await p.locator('#modal-cuerpo *').count(), 0, 'al cerrar se libera el contenido');
 
-  // área vacía: "Contenido próximamente."
+  // área vacía: "Contenido próximamente." (al cerrar la ventana la detección se reinicia)
+  await p.waitForTimeout(1500);
   await p.waitForFunction(() => (window.__app.pantalla || []).length >= 11);
   [x, y] = await centro('03_dipteros');
   await p.mouse.click(x, y);

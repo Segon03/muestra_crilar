@@ -20,7 +20,7 @@ Se edita en `contenido/contenidos.json`; el formato y cómo preparar imágenes y
 
 ## Pruebas
 
-`node tests/geometria.test.mjs`, `node tests/contenido.test.mjs`, `python3 tools/validar_contenido.py`; con el sitio servido (`python3 -m http.server 8765`): `NODE_PATH=$(npm root -g) node tests/e2e_demo.cjs` y `tests/e2e_contenido.cjs`; `node tests/seguimiento_node.cjs` simula el seguimiento sobre el video de evaluación (necesita ffmpeg).
+`node tests/geometria.test.mjs`, `node tests/contenido.test.mjs`, `node tests/ajuste.test.mjs`, `python3 tools/validar_contenido.py`; con el sitio servido (`python3 -m http.server 8765`): `NODE_PATH=$(npm root -g) node tests/e2e_demo.cjs` y `tests/e2e_contenido.cjs`; `node tests/seguimiento_node.cjs` simula el seguimiento sobre el video de evaluación (necesita ffmpeg).
 
 ## Cómo probar en local
 

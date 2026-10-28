@@ -3,6 +3,7 @@ import { cargarOpenCV, cargarBanco, Reconocedor, MIN_DEBIL } from './vision.js';
 import { Seguidor, Rastreo } from './seguimiento.js';
 import { abrirVentana, ventanaAbierta } from './ventana.js';
 import { iniciarFondo, detenerFondo } from './fondo.js';
+import { ajustarCuadrilatero } from './ajuste.js';
 import { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, areaPoligono, contiene, planoDe } from './geometria.js';
 
 const params = new URLSearchParams(location.search);
@@ -25,11 +26,12 @@ async function iniciar() {
   if (DEMO) $('demo').hidden = false;
   if (DEBUG) $('debug').hidden = false;
   try {
-    const [areas, contenidos] = await Promise.all([
+    const [areas, poligonos, contenidos] = await Promise.all([
       fetch('referencias/areas.json').then((r) => r.json()),
+      fetch('referencias/areas_poligonos.json').then((r) => r.json()).catch(() => ({ poligonos: {} })), // si falta, se usan los rectángulos
       fetch('contenido/contenidos.json').then((r) => r.json()).catch(() => ({ areas: {} })),
     ]);
-    estado.areas = areas.areas.map((a) => ({ id: a.id, plano: planoDe(a.id), quad: cajaACuadrilatero(a.bbox_px) }));
+    estado.areas = areas.areas.map((a) => ({ id: a.id, plano: planoDe(a.id), quad: poligonos.poligonos[a.id] || cajaACuadrilatero(a.bbox_px) }));
     estado.contenidos = contenidos.areas || {};
     $('estado').textContent = 'Cargando visión por computadora…';
     const cv = await esperarOpenCV();
@@ -159,6 +161,12 @@ function cuadro(ahora) {
     estado.prevGris = gris;
     estado.stats.fps = 1000 / (ahora - (ultimoCuadro || ahora - 33));
     ultimoCuadro = ahora;
+    // la caja (plano A) se ajusta a su borde real; se necesita el cuadro suavizado
+    estado.ajusteMat?.delete(); estado.ajusteMat = null;
+    if (estado.rastreo.planos.A?.confirmado && !params.has('sinajuste')) {
+      estado.ajusteMat = new estado.seguidor.cv.Mat();
+      estado.seguidor.cv.GaussianBlur(gris, estado.ajusteMat, estado.seguidor.k3, 0, 0);
+    }
     actualizarQuads(ahora);
     dibujar(ahora);
   } catch (e) {
@@ -180,12 +188,18 @@ function alResultado(e) {
 
 // Recuadros de cada área según las homografías vigentes, con las esquinas suavizadas.
 function actualizarQuads(ahora) {
+  estado.stats.ajuste = '-';
   const H = estado.rastreo.vigentes(ahora, PERDIDA_MS);
   const salto = 0.1 * estado.anchoCuadro;
   for (const a of estado.areas) {
     const h = H[a.plano];
     if (!h) { delete estado.suave[a.id]; continue; }
-    const q = proyectarCuadrilatero(h, a.quad);
+    let q = proyectarCuadrilatero(h, a.quad);
+    if (a.plano === 'A' && estado.ajusteMat) {
+      const aj = ajustarCuadrilatero(estado.ajusteMat.data, estado.ajusteMat.cols, estado.ajusteMat.rows, q);
+      estado.stats.ajuste = aj ? 'ok' : 'sin borde';
+      if (aj) q = aj;
+    }
     if (!cuadrilateroValido(q, estado.anchoCuadro, estado.anchoCuadro * 2)) { delete estado.suave[a.id]; continue; }
     const prev = estado.suave[a.id];
     const lejos = prev && q.some(([x, y], i) => Math.hypot(x - prev[i][0], y - prev[i][1]) > salto);
@@ -241,7 +255,7 @@ function dibujar() {
     const s = estado.stats, p = estado.rastreo.planos;
     const fila = (pl) => (p[pl] ? `${p[pl].confirmado ? 'ok' : 'tentativo'}, ${p[pl].inliers} inliers, ${p[pl].pts.length / 2} seguidos (${p[pl].ref})` : '-');
     $('debug').textContent = `${s.modo}  ancho ${ANCHO_TRABAJO}  ${s.fps.toFixed(0)} cuadros/s\n` +
-      `detección: ${s.det.toFixed(0)} ms   puntos: ${s.n}\nplano A: ${fila('A')}\nplano B: ${fila('B')}`;
+      `detección: ${s.det.toFixed(0)} ms   puntos: ${s.n}   ajuste de borde: ${s.ajuste || '-'}\nplano A: ${fila('A')}\nplano B: ${fila('B')}`;
   }
 }
 

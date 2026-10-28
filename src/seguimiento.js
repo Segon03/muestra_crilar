@@ -14,6 +14,7 @@ export class Seguidor {
   constructor(cv) {
     this.cv = cv;
     this.ventana = new cv.Size(21, 21);
+    this.k3 = new cv.Size(3, 3);
     this.criterio = new cv.TermCriteria(cv.TermCriteria_EPS | cv.TermCriteria_COUNT, 20, 0.03);
   }
 

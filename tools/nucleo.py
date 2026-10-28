@@ -28,9 +28,21 @@ POLI_A = np.float32([[352, 25], [1040, 25], [1040, 502], [352, 502]])
 POLI_B = np.float32([[200, 640], [1380, 640], [1380, 1165], [195, 1165]])
 
 
-def cargar_areas():
+def cargar_areas(poligonos=True, exterior=False):
+    """Áreas de areas.json; con poligonos=True cada una trae 'quad' (cuadrilátero trazado a mano
+    de areas_poligonos.json, o el rectángulo si no hay). exterior=True usa el borde externo de la caja."""
     with open(os.path.join(REF, "areas.json"), encoding="utf-8") as f:
-        return json.load(f)["areas"]
+        areas = json.load(f)["areas"]
+    extra = {}
+    if poligonos:
+        with open(os.path.join(REF, "areas_poligonos.json"), encoding="utf-8") as f:
+            d = json.load(f)
+        extra = dict(d["poligonos"])
+        if exterior:
+            extra.update(d["marco_exterior"])
+    for a in areas:
+        a["quad"] = np.float32(extra[a["id"]]) if a["id"] in extra else caja_a_quad(a["bbox_px"])
+    return areas
 
 
 def caja_a_quad(b):
@@ -174,7 +186,8 @@ def proyectar(areas, res, tam):
         r = res.get(pl)
         if r is None or r["inliers"] < MIN_INLIERS:
             continue
-        q = cv2.perspectiveTransform(caja_a_quad(a["bbox_px"]).reshape(-1, 1, 2), r["H"]).reshape(-1, 2)
+        base_q = a["quad"] if "quad" in a else caja_a_quad(a["bbox_px"])
+        q = cv2.perspectiveTransform(base_q.reshape(-1, 1, 2), r["H"]).reshape(-1, 2)
         if not cuadrilatero_valido(q, tam):
             continue
         out[a["id"]] = q

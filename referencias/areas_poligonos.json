@@ -1,0 +1,16 @@
+{
+ "nota": "Cuadriláteros trazados a mano sobre referencias/vitrina_base.jpg (1600x1200), en el orden esquina superior izquierda, superior derecha, inferior derecha, inferior izquierda. Reemplazan al rectángulo de areas.json para dibujar y tocar: el rectángulo envuelve a los paneles inclinados y deja huecos en las esquinas. La 01 sigue la abertura de vidrio de la caja (en el mismo plano que los insectos, así no se desplaza al mirar de costado) y 'marco_exterior' guarda el borde externo, sólo para mediciones. Las áreas 09, 10 y 11 son objetos irregulares y conservan su rectángulo.",
+ "poligonos": {
+  "01_caja_entomologica_superior": [[384, 75], [1012, 61], [981, 467], [457, 481]],
+  "02_lepidopteros": [[291, 671], [448, 666], [428, 853], [276, 860]],
+  "03_dipteros": [[463, 710], [622, 706], [620, 785], [458, 788]],
+  "04_himenopteros": [[650, 653], [790, 651], [795, 843], [646, 839]],
+  "05_ortopteros": [[499, 846], [649, 843], [647, 928], [492, 935]],
+  "06_coleopteros": [[303, 877], [475, 871], [463, 1084], [279, 1097]],
+  "07_hemipteros": [[627, 934], [783, 930], [785, 1078], [624, 1080]],
+  "08_nido_escarabajo_pelotero": [[329, 1066], [402, 1066], [402, 1148], [327, 1150]]
+ },
+ "marco_exterior": {
+  "01_caja_entomologica_superior": [[354, 50], [1037, 31], [999, 484], [450, 500]]
+ }
+}
