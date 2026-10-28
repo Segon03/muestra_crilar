@@ -26,6 +26,14 @@ ANCHOS_BASE_EXTRA = (640, 420)
 SALIDA = os.path.join(n.RAIZ, "datos")
 
 
+def exportar_base_gris():
+    """Foto base en gris, reducida a 400x300: la app la usa para comprobar que la base está bien alineada."""
+    base = cv2.imread(os.path.join(n.REF, "vitrina_base.jpg"), cv2.IMREAD_GRAYSCALE)
+    chica = cv2.resize(base, (400, 300), interpolation=cv2.INTER_AREA)
+    with open(os.path.join(SALIDA, "base_gris.bin"), "wb") as f:
+        f.write(chica.tobytes())
+
+
 def main():
     n.MAX_PUNTOS = MAX_PUNTOS
     banco = comparar.cargar_banco("akaze", True)
@@ -49,6 +57,7 @@ def main():
     with open(os.path.join(SALIDA, "banco_akaze.json"), "w", encoding="utf-8") as f:
         json.dump({"detector": "akaze", "ancho_trabajo": n.ANCHO_TRABAJO, "max_puntos": MAX_PUNTOS,
                    "bytes_descriptor": 64, "planos": planos}, f)
+    exportar_base_gris()
     print(len(planos), "planos,", off // 1024, "KB")
 
 

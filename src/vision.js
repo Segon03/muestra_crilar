@@ -2,6 +2,7 @@
 // contra el banco de referencias (precalculado con tools/exportar_banco.py) y homografía robusta.
 import { emparejar, contarBuenos } from './emparejar.js';
 import { multiplicar } from './geometria.js';
+import { NCC_MIN } from './verificacion.js';
 
 export const MIN_INLIERS = 15;      // criterio del plan para dar un plano por reconocido
 export const MIN_B = 20;            // la base se confunde más (paneles parecidos entre sí): pide más coincidencias para darse por segura
@@ -88,8 +89,8 @@ export class Reconocedor {
       pts[2 * i + 1] = k.pt.y;
       bytes.set(desc.data.subarray(idx[i] * ancho, (idx[i] + 1) * ancho), i * PALABRAS * 4);
     }
-    rgba.delete(); gris.delete(); kp.delete(); desc.delete(); vacia.delete();
-    return { pts, desc: palabras, n };
+    rgba.delete(); kp.delete(); desc.delete(); vacia.delete();
+    return { pts, desc: palabras, n, gris }; // `gris` lo libera quien llama
   }
 
   // Homografía entre una vista del banco y el cuadro. Devuelve {H (9), inliers} o null.
@@ -127,6 +128,14 @@ export class Reconocedor {
   // Reconoce los dos planos en un cuadro. Devuelve {A, B} con {H (base->cuadro), inliers, ref, pts}.
   detectar(imageData) {
     const cuadro = this.describir(imageData);
+    try {
+      return this.detectarCuadro(cuadro);
+    } finally {
+      cuadro.gris.delete();
+    }
+  }
+
+  detectarCuadro(cuadro) {
     const salida = { A: null, B: null, puntos: cuadro.pts, n: cuadro.n };
     const normal = recortar(cuadro, PUNTOS_NORMAL);
     salida.A = this.detectarPlano('A', normal, null);
@@ -140,6 +149,17 @@ export class Reconocedor {
     if ((!salida.B || salida.B.inliers < MIN_B) && cuadro.n > PUNTOS_NORMAL) {
       const r = this.detectarPlano('B', cuadro, priori);
       if (r && (!salida.B || r.inliers > salida.B.inliers)) salida.B = r;
+    }
+    // Comprobación de la base: si los bordes no coinciden con los de la foto base, la alineación
+    // está corrida (paneles repetidos) y se descarta aunque tenga muchas coincidencias.
+    if (salida.B && this.verificador) {
+      const ncc = this.verificador.puntaje(cuadro.gris, salida.B.H);
+      salida.B.ncc = ncc;
+      if (ncc !== null && ncc < NCC_MIN) {
+        this.ultimo.B = null;
+        salida.Brechazada = { inliers: salida.B.inliers, ncc };
+        salida.B = null;
+      }
     }
     return salida;
   }

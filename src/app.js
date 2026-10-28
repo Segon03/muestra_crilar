@@ -4,6 +4,7 @@ import { Seguidor, Rastreo } from './seguimiento.js';
 import { abrirVentana, ventanaAbierta } from './ventana.js';
 import { iniciarFondo, detenerFondo } from './fondo.js';
 import { ajustarCuadrilatero } from './ajuste.js';
+import { cargarVerificador } from './verificacion.js';
 import { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, areaPoligono, contiene, planoDe } from './geometria.js';
 
 const params = new URLSearchParams(location.search);
@@ -57,6 +58,8 @@ function esperarOpenCV() {
 }
 
 // La detección corre en un worker; si el navegador no lo permite, se hace en el hilo principal.
+const urlDatos = (ruta) => new URL(ruta, location.href).href;
+
 async function iniciarDetector(cv) {
   const banco = new URL('datos/banco_akaze', location.href).href;
   try {
@@ -69,7 +72,7 @@ async function iniciarDetector(cv) {
         else if (e.data.tipo === 'error') { clearTimeout(t); reject(new Error(e.data.mensaje)); }
       };
       w.onerror = (e) => { clearTimeout(t); reject(new Error(e.message || 'error en el worker')); };
-      w.postMessage({ tipo: 'init', banco });
+      w.postMessage({ tipo: 'init', banco, baseGris: urlDatos('datos/base_gris.bin'), poligonos: urlDatos('referencias/areas_poligonos.json') });
     });
     w.onmessage = alResultado;
     w.onerror = (e) => console.error('worker', e.message);
@@ -78,6 +81,7 @@ async function iniciarDetector(cv) {
   } catch (e) {
     console.warn('Detección en el hilo principal:', e.message);
     estado.reconocedor = new Reconocedor(cv, await cargarBanco(banco));
+    estado.reconocedor.verificador = await cargarVerificador(cv, urlDatos('datos/base_gris.bin'), urlDatos('referencias/areas_poligonos.json'));
     estado.stats.modo = 'principal';
   }
 }
@@ -155,6 +159,7 @@ function cuadro(ahora) {
       const r = estado.reconocedor.detectar(img);
       estado.stats.det = performance.now() - t0;
       estado.puntos = r.puntos; estado.stats.n = r.n;
+      estado.stats.ncc = r.B ? r.B.ncc : undefined; estado.stats.rechazo = r.Brechazada || null;
       estado.rastreo.recibir(r, gris, gris, ahora);
     }
     estado.prevGris?.delete();
@@ -183,6 +188,7 @@ function alResultado(e) {
   estado.enVuelo = false;
   if (estado.pausado || ventanaAbierta()) return; // resultado de antes de abrir la ventana
   estado.puntos = m.puntos; estado.stats.n = m.n; estado.stats.det = m.ms;
+  estado.stats.ncc = m.B ? m.B.ncc : undefined; estado.stats.rechazo = m.Brechazada || null;
   if (estado.grisEnviado && estado.prevGris) estado.rastreo.recibir(m, estado.grisEnviado, estado.prevGris, performance.now());
 }
 
@@ -255,7 +261,8 @@ function dibujar() {
     const s = estado.stats, p = estado.rastreo.planos;
     const fila = (pl) => (p[pl] ? `${p[pl].confirmado ? 'ok' : 'tentativo'}, ${p[pl].inliers} inliers, ${p[pl].pts.length / 2} seguidos (${p[pl].ref})` : '-');
     $('debug').textContent = `${s.modo}  ancho ${ANCHO_TRABAJO}  ${s.fps.toFixed(0)} cuadros/s\n` +
-      `detección: ${s.det.toFixed(0)} ms   puntos: ${s.n}   ajuste de borde: ${s.ajuste || '-'}\nplano A: ${fila('A')}\nplano B: ${fila('B')}`;
+      `detección: ${s.det.toFixed(0)} ms   puntos: ${s.n}   ajuste de borde: ${s.ajuste || '-'}\nplano A: ${fila('A')}\nplano B: ${fila('B')}\n` +
+      `base: parecido de bordes ${s.ncc == null ? '-' : s.ncc.toFixed(2)}${s.rechazo ? `  (última rechazada: ${s.rechazo.inliers} inliers, parecido ${s.rechazo.ncc.toFixed(2)})` : ''}`;
   }
 }
 

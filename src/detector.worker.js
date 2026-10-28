@@ -11,14 +11,16 @@ self.onmessage = async (e) => {
   try {
     if (m.tipo === 'init') {
       const { cargarOpenCV, cargarBanco, Reconocedor } = await import('./vision.js');
+      const { cargarVerificador } = await import('./verificacion.js');
       const [cv, banco] = await Promise.all([cargarOpenCV(), cargarBanco(m.banco)]);
       reconocedor = new Reconocedor(cv, banco);
+      reconocedor.verificador = await cargarVerificador(cv, m.baseGris, m.poligonos);
       self.postMessage({ tipo: 'listo' });
     } else if (m.tipo === 'cuadro' && reconocedor) {
       const t0 = performance.now();
       const img = new ImageData(new Uint8ClampedArray(m.buf), m.ancho, m.alto);
       const r = reconocedor.detectar(img);
-      const salida = { tipo: 'resultado', id: m.id, A: r.A, B: r.B, puntos: r.puntos, n: r.n, ms: performance.now() - t0 };
+      const salida = { tipo: 'resultado', id: m.id, A: r.A, B: r.B, Brechazada: r.Brechazada, puntos: r.puntos, n: r.n, ms: performance.now() - t0 };
       self.postMessage(salida, [r.puntos.buffer]);
     }
   } catch (err) {

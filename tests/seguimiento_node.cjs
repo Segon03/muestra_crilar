@@ -19,6 +19,8 @@ const W = 480, H = 854, TAM = W * H * 4;
   const buf = b.buffer.slice(b.byteOffset, b.byteOffset + b.length);
   const planos = meta.planos.map((p) => ({ ref: p.ref, plano: p.plano, n: p.n, H: p.H, pts: new Float32Array(buf, p.offset, p.n * 2), desc: new Uint32Array(buf, p.offset + p.n * 8, p.n * 16) }));
   const rec = new Reconocedor(cv, { planos });
+  const { Verificador } = await import(path.join(raiz, 'src/verificacion.js'));
+  if (!process.env.SIN_VERIFICACION) rec.verificador = new Verificador(cv, new Uint8Array(fs.readFileSync(path.join(raiz, 'datos/base_gris.bin'))), JSON.parse(fs.readFileSync(path.join(raiz, 'referencias/areas_poligonos.json'))).poligonos);
   const seg = new Seguidor(cv), ras = new Rastreo(seg, W);
   const areas = JSON.parse(fs.readFileSync(path.join(raiz, 'referencias/areas.json'))).areas;
   const gt = JSON.parse(fs.readFileSync(path.join(raiz, 'tests/gt_video_muestra2.json')));
