@@ -1,0 +1,483 @@
+{
+ "video": "referencias/pruebas/video_muestra2.mp4",
+ "fps": 30,
+ "ancho": 480,
+ "alto": 854,
+ "nota": "Anotación manual a ojo de cajas alineadas a los ejes (x1,y1,x2,y2) sobre el cuadro de 480x854, recortadas al borde del cuadro; sólo áreas visibles. Error esperado de unos 5-10 px.",
+ "cuadros": [
+  {
+   "t": 2,
+   "frame": 60,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     139,
+     314,
+     234,
+     384
+    ]
+   }
+  },
+  {
+   "t": 5,
+   "frame": 150,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     94,
+     169,
+     289,
+     314
+    ],
+    "06_coleopteros": [
+     25,
+     494,
+     106,
+     550
+    ],
+    "09_panal_avispa": [
+     300,
+     447,
+     394,
+     500
+    ],
+    "11_rama_oncideres": [
+     212,
+     487,
+     462,
+     572
+    ]
+   }
+  },
+  {
+   "t": 8,
+   "frame": 240,
+   "cajas": {
+    "06_coleopteros": [
+     31,
+     369,
+     224,
+     488
+    ],
+    "08_nido_escarabajo_pelotero": [
+     44,
+     445,
+     106,
+     509
+    ],
+    "05_ortopteros": [
+     222,
+     375,
+     363,
+     431
+    ],
+    "07_hemipteros": [
+     289,
+     431,
+     462,
+     541
+    ],
+    "03_dipteros": [
+     234,
+     309,
+     366,
+     347
+    ],
+    "02_lepidopteros": [
+     113,
+     300,
+     228,
+     359
+    ],
+    "04_himenopteros": [
+     375,
+     306,
+     480,
+     400
+    ]
+   }
+  },
+  {
+   "t": 11,
+   "frame": 330,
+   "cajas": {
+    "02_lepidopteros": [
+     0,
+     152,
+     176,
+     322
+    ],
+    "03_dipteros": [
+     202,
+     180,
+     421,
+     259
+    ],
+    "05_ortopteros": [
+     273,
+     300,
+     480,
+     403
+    ],
+    "06_coleopteros": [
+     0,
+     323,
+     259,
+     606
+    ],
+    "08_nido_escarabajo_pelotero": [
+     28,
+     544,
+     169,
+     697
+    ]
+   }
+  },
+  {
+   "t": 14,
+   "frame": 420,
+   "cajas": {
+    "04_himenopteros": [
+     0,
+     243,
+     145,
+     358
+    ],
+    "07_hemipteros": [
+     0,
+     402,
+     120,
+     520
+    ],
+    "10_nidos_barro_avispas": [
+     198,
+     388,
+     278,
+     447
+    ],
+    "09_panal_avispa": [
+     285,
+     300,
+     480,
+     420
+    ],
+    "11_rama_oncideres": [
+     0,
+     400,
+     480,
+     665
+    ]
+   }
+  },
+  {
+   "t": 17,
+   "frame": 510,
+   "cajas": {
+    "09_panal_avispa": [
+     139,
+     259,
+     425,
+     431
+    ],
+    "10_nidos_barro_avispas": [
+     0,
+     375,
+     100,
+     450
+    ],
+    "11_rama_oncideres": [
+     0,
+     425,
+     480,
+     666
+    ]
+   }
+  },
+  {
+   "t": 20,
+   "frame": 600,
+   "cajas": {
+    "09_panal_avispa": [
+     128,
+     213,
+     391,
+     384
+    ],
+    "10_nidos_barro_avispas": [
+     34,
+     363,
+     116,
+     438
+    ],
+    "11_rama_oncideres": [
+     0,
+     372,
+     480,
+     669
+    ]
+   }
+  },
+  {
+   "t": 23,
+   "frame": 690,
+   "cajas": {
+    "03_dipteros": [
+     54,
+     174,
+     229,
+     269
+    ],
+    "04_himenopteros": [
+     250,
+     112,
+     416,
+     322
+    ],
+    "05_ortopteros": [
+     114,
+     319,
+     276,
+     416
+    ],
+    "07_hemipteros": [
+     261,
+     403,
+     431,
+     555
+    ],
+    "06_coleopteros": [
+     0,
+     350,
+     106,
+     575
+    ]
+   }
+  },
+  {
+   "t": 26,
+   "frame": 780,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     31,
+     24,
+     480,
+     572
+    ],
+    "04_himenopteros": [
+     236,
+     756,
+     400,
+     854
+    ]
+   }
+  },
+  {
+   "t": 29,
+   "frame": 870,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     0,
+     81,
+     480,
+     831
+    ]
+   }
+  },
+  {
+   "t": 32,
+   "frame": 960,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     0,
+     119,
+     312,
+     549
+    ],
+    "04_himenopteros": [
+     0,
+     744,
+     150,
+     854
+    ]
+   }
+  },
+  {
+   "t": 35,
+   "frame": 1050,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     22,
+     128,
+     267,
+     320
+    ],
+    "04_himenopteros": [
+     97,
+     466,
+     181,
+     531
+    ],
+    "07_hemipteros": [
+     63,
+     553,
+     159,
+     609
+    ],
+    "09_panal_avispa": [
+     259,
+     503,
+     388,
+     578
+    ],
+    "10_nidos_barro_avispas": [
+     206,
+     553,
+     250,
+     591
+    ],
+    "11_rama_oncideres": [
+     78,
+     566,
+     462,
+     688
+    ]
+   }
+  },
+  {
+   "t": 38,
+   "frame": 1140,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     161,
+     121,
+     358,
+     289
+    ],
+    "04_himenopteros": [
+     216,
+     420,
+     309,
+     475
+    ],
+    "06_coleopteros": [
+     111,
+     475,
+     203,
+     544
+    ],
+    "09_panal_avispa": [
+     347,
+     428,
+     447,
+     491
+    ],
+    "11_rama_oncideres": [
+     319,
+     478,
+     480,
+     575
+    ]
+   }
+  },
+  {
+   "t": 41,
+   "frame": 1230,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     112,
+     117,
+     311,
+     280
+    ],
+    "04_himenopteros": [
+     200,
+     400,
+     275,
+     434
+    ],
+    "06_coleopteros": [
+     109,
+     466,
+     206,
+     534
+    ],
+    "09_panal_avispa": [
+     309,
+     400,
+     403,
+     456
+    ],
+    "11_rama_oncideres": [
+     328,
+     438,
+     480,
+     538
+    ]
+   }
+  },
+  {
+   "t": 44,
+   "frame": 1320,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     158,
+     75,
+     378,
+     242
+    ],
+    "06_coleopteros": [
+     75,
+     438,
+     166,
+     500
+    ],
+    "09_panal_avispa": [
+     375,
+     388,
+     480,
+     463
+    ]
+   }
+  },
+  {
+   "t": 47,
+   "frame": 1410,
+   "cajas": {
+    "01_caja_entomologica_superior": [
+     0,
+     0,
+     326,
+     86
+    ],
+    "04_himenopteros": [
+     88,
+     416,
+     194,
+     488
+    ],
+    "07_hemipteros": [
+     0,
+     509,
+     145,
+     584
+    ],
+    "10_nidos_barro_avispas": [
+     224,
+     528,
+     295,
+     566
+    ],
+    "09_panal_avispa": [
+     309,
+     475,
+     480,
+     563
+    ],
+    "11_rama_oncideres": [
+     0,
+     570,
+     480,
+     690
+    ]
+   }
+  }
+ ]
+}

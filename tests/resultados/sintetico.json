@@ -1,0 +1,254 @@
+[
+ {
+  "detector": "orb",
+  "banco": 1,
+  "tipos": {
+   "frontal+luz": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9807062937652063,
+    "pct_iou_ge_50": 100.0
+   },
+   "rotacion": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.978686644422291,
+    "pct_iou_ge_50": 100.0
+   },
+   "perspectiva": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9764805335682052,
+    "pct_iou_ge_50": 100.0
+   },
+   "escala": {
+    "pct_cuadros_con_reconocimiento": 66.66666666666667,
+    "iou_medio": 0.3930581886544976,
+    "pct_iou_ge_50": 43.93939393939394
+   },
+   "blur": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.4896989279033156,
+    "pct_iou_ge_50": 52.27272727272727
+   },
+   "reflejos": {
+    "pct_cuadros_con_reconocimiento": 41.666666666666664,
+    "iou_medio": 0.10860043081347831,
+    "pct_iou_ge_50": 11.363636363636363
+   },
+   "combinado": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.20683479593017692,
+    "pct_iou_ge_50": 21.96969696969697
+   }
+  },
+  "usa_banco": false
+ },
+ {
+  "detector": "orb",
+  "banco": 32,
+  "tipos": {
+   "frontal+luz": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9799056608330162,
+    "pct_iou_ge_50": 100.0
+   },
+   "rotacion": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9767768529240725,
+    "pct_iou_ge_50": 100.0
+   },
+   "perspectiva": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9768995956488806,
+    "pct_iou_ge_50": 100.0
+   },
+   "escala": {
+    "pct_cuadros_con_reconocimiento": 66.66666666666667,
+    "iou_medio": 0.3946270701308992,
+    "pct_iou_ge_50": 43.93939393939394
+   },
+   "blur": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.48126722840988223,
+    "pct_iou_ge_50": 52.27272727272727
+   },
+   "reflejos": {
+    "pct_cuadros_con_reconocimiento": 41.666666666666664,
+    "iou_medio": 0.10895621186204435,
+    "pct_iou_ge_50": 11.363636363636363
+   },
+   "combinado": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.20574726444128927,
+    "pct_iou_ge_50": 21.96969696969697
+   }
+  },
+  "usa_banco": true
+ },
+ {
+  "detector": "akaze",
+  "banco": 1,
+  "tipos": {
+   "frontal+luz": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9876027732012453,
+    "pct_iou_ge_50": 100.0
+   },
+   "rotacion": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9857715085585579,
+    "pct_iou_ge_50": 100.0
+   },
+   "perspectiva": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.982273341735305,
+    "pct_iou_ge_50": 100.0
+   },
+   "escala": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.6108889589239553,
+    "pct_iou_ge_50": 62.878787878787875
+   },
+   "blur": {
+    "pct_cuadros_con_reconocimiento": 83.33333333333333,
+    "iou_medio": 0.6998517424934503,
+    "pct_iou_ge_50": 74.24242424242425
+   },
+   "reflejos": {
+    "pct_cuadros_con_reconocimiento": 66.66666666666667,
+    "iou_medio": 0.3996971966251023,
+    "pct_iou_ge_50": 42.42424242424242
+   },
+   "combinado": {
+    "pct_cuadros_con_reconocimiento": 83.33333333333333,
+    "iou_medio": 0.20099658079139315,
+    "pct_iou_ge_50": 21.21212121212121
+   }
+  },
+  "usa_banco": false
+ },
+ {
+  "detector": "akaze",
+  "banco": 32,
+  "tipos": {
+   "frontal+luz": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9870751426994794,
+    "pct_iou_ge_50": 100.0
+   },
+   "rotacion": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9860681713221057,
+    "pct_iou_ge_50": 100.0
+   },
+   "perspectiva": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9827633842438771,
+    "pct_iou_ge_50": 100.0
+   },
+   "escala": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.570488263144384,
+    "pct_iou_ge_50": 59.84848484848485
+   },
+   "blur": {
+    "pct_cuadros_con_reconocimiento": 83.33333333333333,
+    "iou_medio": 0.6982071146431358,
+    "pct_iou_ge_50": 75.0
+   },
+   "reflejos": {
+    "pct_cuadros_con_reconocimiento": 66.66666666666667,
+    "iou_medio": 0.3998956202444785,
+    "pct_iou_ge_50": 42.42424242424242
+   },
+   "combinado": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.20237717257727222,
+    "pct_iou_ge_50": 21.21212121212121
+   }
+  },
+  "usa_banco": true
+ },
+ {
+  "detector": "sift",
+  "banco": 1,
+  "tipos": {
+   "frontal+luz": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.980512109555427,
+    "pct_iou_ge_50": 100.0
+   },
+   "rotacion": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9818978998588495,
+    "pct_iou_ge_50": 100.0
+   },
+   "perspectiva": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9805340768926901,
+    "pct_iou_ge_50": 100.0
+   },
+   "escala": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.5723746765512469,
+    "pct_iou_ge_50": 59.09090909090909
+   },
+   "blur": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.5080934865859725,
+    "pct_iou_ge_50": 52.27272727272727
+   },
+   "reflejos": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.490934267916298,
+    "pct_iou_ge_50": 50.75757575757576
+   },
+   "combinado": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.2048723915114838,
+    "pct_iou_ge_50": 21.21212121212121
+   }
+  },
+  "usa_banco": false
+ },
+ {
+  "detector": "sift",
+  "banco": 32,
+  "tipos": {
+   "frontal+luz": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9803151462795271,
+    "pct_iou_ge_50": 100.0
+   },
+   "rotacion": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9807882964718568,
+    "pct_iou_ge_50": 100.0
+   },
+   "perspectiva": {
+    "pct_cuadros_con_reconocimiento": 100.0,
+    "iou_medio": 0.9805965012594887,
+    "pct_iou_ge_50": 100.0
+   },
+   "escala": {
+    "pct_cuadros_con_reconocimiento": 66.66666666666667,
+    "iou_medio": 0.5718990073756174,
+    "pct_iou_ge_50": 59.09090909090909
+   },
+   "blur": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.4354921350019822,
+    "pct_iou_ge_50": 44.696969696969695
+   },
+   "reflejos": {
+    "pct_cuadros_con_reconocimiento": 75.0,
+    "iou_medio": 0.3444391970568695,
+    "pct_iou_ge_50": 35.60606060606061
+   },
+   "combinado": {
+    "pct_cuadros_con_reconocimiento": 50.0,
+    "iou_medio": 0.11121067165859974,
+    "pct_iou_ge_50": 11.363636363636363
+   }
+  },
+  "usa_banco": true
+ }
+]
