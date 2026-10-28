@@ -26,7 +26,10 @@ SALIDA = os.path.join(n.REF, "banco")
 MIN_INL_REG = 30        # inliers para aceptar un registro
 ANCHO_FEAT = 960        # ancho máximo para calcular puntos
 VIDEO = os.path.join(n.REF, "pruebas", "video_muestra.mp4")
-FOTOS = [os.path.join(n.REF, "pruebas", f"foto_angulo_0{i}.jpg") for i in (1, 2, 3)]
+FOTOS = [os.path.join(n.REF, "pruebas", f"foto_angulo_0{i}.jpg") for i in (1, 2, 3)] + \
+    [os.path.join(n.REF, "pruebas", f"foto{i}.jpeg") for i in (4, 5, 6, 7)]
+FORZAR = {"foto4.jpeg", "foto5.jpeg", "foto6.jpeg", "foto7.jpeg"}  # fotos tomadas con el celular en la sala: siempre entran al banco
+ANOTACIONES = os.path.join(os.path.dirname(__file__), "anotaciones_banco.json")
 
 
 def feats(img, mask_quad=None, ancho=ANCHO_FEAT):
@@ -132,6 +135,20 @@ def elegir(regs, pl, k):
     return [cand[i] for i in sel]
 
 
+def homografia_manual(plano_anotado):
+    """Homografía base -> imagen a partir de las esquinas de paneles medidas a mano."""
+    with open(os.path.join(n.REF, "areas_poligonos.json"), encoding="utf-8") as f:
+        pol = json.load(f)["poligonos"]
+    src, dst = [], []
+    for area, esquinas in plano_anotado.items():
+        src += pol[area]
+        dst += esquinas
+    H, mk = cv2.findHomography(np.float32(src), np.float32(dst), cv2.RANSAC, 4.0)
+    proy = cv2.perspectiveTransform(np.float32(src).reshape(-1, 1, 2), H).reshape(-1, 2)
+    err = float(np.linalg.norm(proy - np.float32(dst), axis=1).mean())
+    return H, int(mk.sum()), err
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=18, help="vistas por plano (además de la base)")
@@ -175,11 +192,26 @@ def main():
         if nuevos == 0:
             break
 
+    # registros manuales: reemplazan (o agregan) el plano indicado
+    with open(ANOTACIONES, encoding="utf-8") as f:
+        manuales = json.load(f)["fotos"]
+    for ci, (nom, img) in enumerate(cands):
+        for pl, anot in manuales.get(nom, {}).items():
+            H, ni, err = homografia_manual(anot)
+            print(f"  manual {nom} plano {pl}: {ni} puntos de {sum(len(v) for v in anot.values())}, error medio {err:.1f} px")
+            r = regs.setdefault(ci, {"nombre": nom, "img": img, "res": {}, "tam": (img.shape[1], img.shape[0])})
+            r["res"][pl] = (H, 999, "manual")
+            if ci in pendientes:
+                pendientes.remove(ci)
+
     print("no registrados:", [cands[c][0] for c in pendientes])
     lista = list(regs.values())
     elegidas = {}
     for pl in ("A", "B"):
         for r in elegir(lista, pl, args.n):
+            elegidas.setdefault(r["nombre"], r)
+    for r in lista:
+        if r["nombre"] in FORZAR:
             elegidas.setdefault(r["nombre"], r)
     os.makedirs(SALIDA, exist_ok=True)
     for f in os.listdir(SALIDA):

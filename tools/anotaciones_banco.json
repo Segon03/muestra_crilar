@@ -1,0 +1,13 @@
+{
+ "nota": "Registros hechos a mano para vistas del banco donde el automático falla (vistas lejanas y de frente, con reflejos y poca luz). Cada entrada lleva las esquinas de varios paneles medidas sobre la imagen (px de la foto original), en el orden esquina superior izquierda, superior derecha, inferior derecha, inferior izquierda, y se contrastan con areas_poligonos.json para calcular la homografía de ese plano.",
+ "fotos": {
+  "foto5.jpeg": {
+   "B": {
+    "03_dipteros": [[143.3, 641.7], [231.7, 642.3], [230.7, 671.7], [150, 670.7]],
+    "05_ortopteros": [[151, 688.7], [245, 690], [240.7, 716], [143.3, 720]],
+    "07_hemipteros": [[229.3, 720], [325, 721], [325, 775.7], [220, 776.7]],
+    "04_himenopteros": [[250.7, 626.7], [333.3, 628.3], [333.3, 694], [242.3, 687.7]]
+   }
+  }
+ }
+}
