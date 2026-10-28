@@ -32,8 +32,12 @@
     <div class="tarjeta">
       <button id="cerrar" type="button" aria-label="Cerrar">×</button>
       <h2 id="modal-titulo"></h2>
-      <p id="modal-texto"></p>
+      <div id="modal-cuerpo"></div>
     </div>
+  </div>
+  <div id="ampliada" hidden role="dialog" aria-label="Imagen ampliada">
+    <button id="cerrar-ampliada" type="button" aria-label="Cerrar imagen">×</button>
+    <div class="lienzo"><img id="ampliada-img" alt=""></div>
   </div>
 
   <script src="vendor/opencv/opencv.js" async></script>

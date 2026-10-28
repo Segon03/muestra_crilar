@@ -1,6 +1,7 @@
 // Pantalla principal: cámara, bucle de reconocimiento, recuadros sobre el video y ventana emergente.
 import { cargarOpenCV, cargarBanco, Reconocedor, MIN_DEBIL } from './vision.js';
 import { Seguidor, Rastreo } from './seguimiento.js';
+import { abrirVentana, ventanaAbierta } from './ventana.js';
 import { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, areaPoligono, contiene, planoDe } from './geometria.js';
 
 const params = new URLSearchParams(location.search);
@@ -120,6 +121,13 @@ function cuadro(ahora) {
   const el = estado.fuente;
   const [vw, vh] = medidas(el);
   if (!vw || ahora - ultimoCuadro < 30) { return; } // como mucho ~30 cuadros por segundo
+  if (ventanaAbierta()) { estado.pausado = true; return; } // con la ventana abierta no se detecta ni se sigue (ahorra batería)
+  if (estado.pausado) { // al cerrar la ventana el cuadro anterior quedó viejo: se empieza de cero
+    estado.pausado = false;
+    estado.rastreo.planos = { A: null, B: null };
+    estado.suave = {};
+    estado.prevGris?.delete(); estado.prevGris = null;
+  }
   try {
     fuera.width = ANCHO_TRABAJO;
     fuera.height = Math.round((vh * ANCHO_TRABAJO) / vw);
@@ -162,6 +170,7 @@ function alResultado(e) {
   if (m.tipo === 'error') { console.error('worker:', m.mensaje); estado.enVuelo = false; return; }
   if (m.tipo !== 'resultado') return;
   estado.enVuelo = false;
+  if (estado.pausado || ventanaAbierta()) return; // resultado de antes de abrir la ventana
   estado.puntos = m.puntos; estado.stats.n = m.n; estado.stats.det = m.ms;
   if (estado.grisEnviado && estado.prevGris) estado.rastreo.recibir(m, estado.grisEnviado, estado.prevGris, performance.now());
 }
@@ -242,15 +251,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   abrirModal(dentro[0].id);
 });
 
-function abrirModal(id) {
-  const c = estado.contenidos[id];
-  $('modal-titulo').textContent = titulo(id);
-  $('modal-texto').textContent = c?.texto || 'Contenido próximamente.';
-  $('modal').hidden = false;
-}
-const cerrarModal = () => { $('modal').hidden = true; };
-$('cerrar').addEventListener('click', cerrarModal);
-$('modal').addEventListener('click', (e) => { if (e.target === $('modal')) cerrarModal(); });
+function abrirModal(id) { abrirVentana(id, estado.contenidos[id]); }
 
 // ---------- botones ----------
 $('abrir').addEventListener('click', async () => {

@@ -1,17 +1,17 @@
 {
-  "version": 1,
-  "nota": "Contenido provisorio. Completar titulo, texto, imagenes, video y creditos de cada area. Los id coinciden con referencias/areas.json.",
-  "areas": {
-    "01_caja_entomologica_superior": {"titulo": "Caja entomológica", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "02_lepidopteros": {"titulo": "Lepidópteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "03_dipteros": {"titulo": "Dípteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "04_himenopteros": {"titulo": "Himenópteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "05_ortopteros": {"titulo": "Ortópteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "06_coleopteros": {"titulo": "Coleópteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "07_hemipteros": {"titulo": "Hemípteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "08_nido_escarabajo_pelotero": {"titulo": "Nido de escarabajo pelotero", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "09_panal_avispa": {"titulo": "Nido de avispa", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "10_nidos_barro_avispas": {"titulo": "Nidos de barro de avispas", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
-    "11_rama_oncideres": {"titulo": "Oncideres, el corta palos", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""}
-  }
+ "version": 2,
+ "nota": "Contenido provisorio. Completar de cada area: titulo, texto (parrafos separados por una linea en blanco), imagenes, video y creditos. Los id coinciden con referencias/areas.json. Una area sin material muestra 'Contenido proximamente.' Formato completo y como preparar imagenes y videos: ver contenido/LEEME.md. Validar con: python3 tools/validar_contenido.py",
+ "areas": {
+  "01_caja_entomologica_superior": {"titulo": "Caja entomológica", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "02_lepidopteros": {"titulo": "Lepidópteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "03_dipteros": {"titulo": "Dípteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "04_himenopteros": {"titulo": "Himenópteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "05_ortopteros": {"titulo": "Ortópteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "06_coleopteros": {"titulo": "Coleópteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "07_hemipteros": {"titulo": "Hemípteros", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "08_nido_escarabajo_pelotero": {"titulo": "Nido de escarabajo pelotero", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "09_panal_avispa": {"titulo": "Nido de avispa", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "10_nidos_barro_avispas": {"titulo": "Nidos de barro de avispas", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""},
+  "11_rama_oncideres": {"titulo": "Oncideres, el corta palos", "texto": "Contenido próximamente.", "imagenes": [], "video": null, "creditos": ""}
+ }
 }

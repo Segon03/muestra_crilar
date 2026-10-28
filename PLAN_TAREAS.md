@@ -86,11 +86,11 @@ Las 11 áreas son: `01_caja_entomologica_superior` (un solo recuadro para toda l
 - [ ] Si las áreas 08 y 10 no son estables, aplicar el plan B descrito arriba.
 
 ### Fase 4: contenido de las ventanas emergentes
-- [ ] Definir el formato en `contenido/contenidos.json`: por área, título, texto, imágenes, video y créditos. Se carga desde ahí para poder completarlo sin tocar el código.
-- [ ] Diseñar la ventana emergente para pantalla de celular: título, texto, galería de imágenes, video y botón de cierre.
+- [x] Definir el formato en `contenido/contenidos.json`: por área, título, texto, imágenes, video y créditos. Se carga desde ahí para poder completarlo sin tocar el código.
+- [x] Diseñar la ventana emergente para pantalla de celular: título, texto, galería de imágenes, video y botón de cierre.
 - [ ] Cargar el contenido existente: infografía y fotos de Oncideres en el área 11, y las fotos de insectos por orden en las áreas que correspondan. Mostrar los créditos de cada imagen.
 - [ ] Comprimir los videos a un tamaño razonable (idealmente menos de 10 MB cada uno) antes de subirlos al repo.
-- [ ] Dejar en "Contenido próximamente" las áreas sin material (por ahora 08, 09 y 10).
+- [x] Dejar en "Contenido próximamente" las áreas sin material (hoy todas, hasta que se carguen los archivos).
 
 ### Fase 5: cierre para la Noche de los Museos
 - [ ] Generar el código QR con la URL de Pages, en PNG y PDF listos para imprimir, en `qr/`.

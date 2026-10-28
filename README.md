@@ -14,6 +14,14 @@ Estado: en preparación. El plan de trabajo está en [PLAN_TAREAS.md](PLAN_TAREA
 - `tests/`: pruebas de reconocimiento.
 - `qr/`: código QR para imprimir.
 
+## Contenido de las ventanas
+
+Se edita en `contenido/contenidos.json`; el formato y cómo preparar imágenes y videos están en [contenido/LEEME.md](contenido/LEEME.md).
+
+## Pruebas
+
+`node tests/geometria.test.mjs`, `node tests/contenido.test.mjs`, `python3 tools/validar_contenido.py`; con el sitio servido (`python3 -m http.server 8765`): `NODE_PATH=$(npm root -g) node tests/e2e_demo.cjs` y `tests/e2e_contenido.cjs`; `node tests/seguimiento_node.cjs` simula el seguimiento sobre el video de evaluación (necesita ffmpeg).
+
 ## Cómo probar en local
 
 Sitio estático: `python3 -m http.server 8000` en la raíz y abrir `http://localhost:8000/` (la cámara anda en localhost). Con `?demo=1` se puede probar sin cámara (video o foto) y con `?debug=1` se ven los puntos detectados, los inliers y el tiempo por detección.
