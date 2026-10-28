@@ -11,13 +11,17 @@ const GRUESO = 300;                 // puntos usados en la búsqueda rápida ent
 const CANDIDATAS = 4;               // vistas que pasan de la búsqueda rápida al ajuste fino
 const PALABRAS = 16;
 
-export async function cargarOpenCV() {
-  let c = window.cv;
-  if (!c) throw new Error('No se cargó OpenCV.js');
-  if (typeof c === 'function') c = await c();
-  else if (typeof c.then === 'function') c = await c;
-  if (!c.Mat) await new Promise((r) => { c.onRuntimeInitialized = r; });
-  return c;
+export function cargarOpenCV() {
+  // En esta compilación el módulo `cv` tiene un `then` que se resuelve a sí mismo: devolverlo
+  // desde una promesa (o hacerle `await`) cuelga la página en un bucle infinito. Se espera el
+  // callback de inicialización y se quita el `then` antes de entregarlo.
+  return new Promise((resolve, reject) => {
+    const c = window.cv;
+    if (!c) return reject(new Error('No se cargó OpenCV.js'));
+    const listo = () => { c.then = undefined; resolve(c); };
+    if (c.Mat) return listo();
+    c.onRuntimeInitialized = listo;
+  });
 }
 
 export async function cargarBanco(ruta = 'datos/banco_akaze') {
