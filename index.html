@@ -2,19 +2,41 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14201a">
   <title>Muestra interactiva del CRILAR</title>
-  <style>
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center;
-           font-family: system-ui, sans-serif; background: #14201a; color: #f2f2f2; text-align: center; }
-    main { padding: 24px; max-width: 28rem; }
-    p { color: #b8c4bc; }
-  </style>
+  <link rel="stylesheet" href="src/estilos.css">
 </head>
 <body>
-  <main>
+  <video id="video" playsinline muted autoplay></video>
+  <img id="imagen" alt="" hidden>
+  <canvas id="overlay"></canvas>
+
+  <div id="mensaje" hidden>Apuntá la cámara a la vitrina</div>
+  <pre id="debug" hidden></pre>
+
+  <section id="inicio">
     <h1>Muestra interactiva del CRILAR</h1>
-    <p>Página de prueba. Próximamente: apuntá la cámara a la vitrina entomológica.</p>
-  </main>
+    <p>Apuntá la cámara de tu celular a la vitrina entomológica: cada área se marca sobre la imagen. Tocá un recuadro para ver su información.</p>
+    <button id="abrir" type="button" disabled>Abrir cámara</button>
+    <p id="estado" class="estado">Cargando…</p>
+    <div id="demo" hidden>
+      <p>Modo demostración (sin cámara):</p>
+      <label class="boton secundario">Subir video o foto<input id="archivo" type="file" accept="video/*,image/*" hidden></label>
+      <button id="demo-video" type="button" class="secundario">Video de muestra</button>
+      <button id="demo-foto" type="button" class="secundario">Foto de ángulo</button>
+    </div>
+  </section>
+
+  <div id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <div class="tarjeta">
+      <button id="cerrar" type="button" aria-label="Cerrar">×</button>
+      <h2 id="modal-titulo"></h2>
+      <p id="modal-texto"></p>
+    </div>
+  </div>
+
+  <script src="vendor/opencv/opencv.js" async></script>
+  <script type="module" src="src/app.js"></script>
 </body>
 </html>

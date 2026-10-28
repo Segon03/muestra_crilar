@@ -14,6 +14,12 @@ Estado: en preparación. El plan de trabajo está en [PLAN_TAREAS.md](PLAN_TAREA
 - `tests/`: pruebas de reconocimiento.
 - `qr/`: código QR para imprimir.
 
+## Cómo probar en local
+
+Sitio estático: `python3 -m http.server 8000` en la raíz y abrir `http://localhost:8000/` (la cámara anda en localhost). Con `?demo=1` se puede probar sin cámara (video o foto) y con `?debug=1` se ven los puntos detectados, los inliers y el tiempo por detección.
+
+El banco de referencias que usa la app (`datos/`) se regenera con `python3 tools/armar_banco.py` y `python3 tools/exportar_banco.py`.
+
 ## Publicación
 
 GitHub Pages desde la rama `main`. URL prevista: https://segon03.github.io/muestra_crilar/

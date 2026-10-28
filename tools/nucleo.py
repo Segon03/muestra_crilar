@@ -20,6 +20,7 @@ ANCHO_TRABAJO = 480        # ancho al que se reducen los cuadros antes de detect
 ANCHO_REF = 960            # ancho de la referencia al calcular sus puntos
 MIN_INLIERS = 15           # criterio del plan para dar un plano por reconocido
 UMBRAL_RANSAC = 4.0        # px, en la escala de trabajo
+MAX_PUNTOS = None          # si se fija, se conservan sólo los de mayor respuesta (referencia y cuadro)
 
 # Polígonos de cada plano sobre vitrina_base.jpg (px de la foto de 1600x1200)
 POLI_A = np.float32([[352, 25], [1040, 25], [1040, 502], [352, 502]])
@@ -73,6 +74,14 @@ def escala_h(s):
     return np.diag([s, s, 1.0])
 
 
+def top_puntos(kp, desc, maximo):
+    if maximo and desc is not None and len(kp) > maximo:
+        idx = np.argsort([-k.response for k in kp])[:maximo]
+        kp = [kp[i] for i in idx]
+        desc = desc[idx]
+    return kp, desc
+
+
 class Plano:
     """Puntos de un plano dentro de una imagen de referencia."""
 
@@ -99,6 +108,7 @@ class Referencia:
             mask = np.zeros(gris.shape, np.uint8)
             cv2.fillConvexPoly(mask, np.int32(quad), 255)
             kp, desc = det.detectAndCompute(gris, mask)
+            kp, desc = top_puntos(kp, desc, MAX_PUNTOS)
             if desc is None or len(kp) < 8:
                 continue
             self.planos[pl] = Plano(kp, desc, Hs)
@@ -117,6 +127,7 @@ class Reconocedor:
         """Devuelve (kp_pts, desc, escala) del cuadro reducido."""
         small, s = reducir(img)
         kp, desc = self.det.detectAndCompute(a_gris(small), None)
+        kp, desc = top_puntos(kp, desc, MAX_PUNTOS)
         pts = np.float32([k.pt for k in kp]).reshape(-1, 2) if kp else np.zeros((0, 2), np.float32)
         return pts, desc, s
 
