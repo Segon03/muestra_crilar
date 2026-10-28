@@ -4,6 +4,7 @@ import { emparejar, contarBuenos } from './emparejar.js';
 import { multiplicar } from './geometria.js';
 
 export const MIN_INLIERS = 15;      // criterio del plan para dar un plano por reconocido
+export const MIN_B = 20;            // la base se confunde más (paneles parecidos entre sí): pide más coincidencias para darse por segura
 export const MIN_DEBIL = 10;        // por debajo no se informa; entre 10 y 14 hay que confirmarlo con otra detección
 const UMBRAL_RANSAC = 4.0;          // px sobre el cuadro de trabajo
 const MAX_PUNTOS_BANCO = 800;       // tope de puntos por plano en el banco (ver tools/exportar_banco.py)
@@ -48,6 +49,9 @@ function recortar(c, m) {
   if (c.n <= m) return c;
   return { pts: c.pts.subarray(0, 2 * m), desc: c.desc.subarray(0, m * PALABRAS), n: m };
 }
+
+// Coincidencias necesarias para dar un plano por reconocido sin esperar confirmación.
+export const umbralFuerte = (pl) => (pl === 'B' ? MIN_B : MIN_INLIERS);
 
 export class Reconocedor {
   constructor(cv, banco) {
@@ -133,7 +137,7 @@ export class Reconocedor {
     salida.B = this.detectarPlano('B', normal, priori);
     // De lejos los puntos de la base son débiles y quedan fuera de los 800 más fuertes: segunda
     // pasada de B con todos los puntos del cuadro.
-    if ((!salida.B || salida.B.inliers < MIN_INLIERS) && cuadro.n > PUNTOS_NORMAL) {
+    if ((!salida.B || salida.B.inliers < MIN_B) && cuadro.n > PUNTOS_NORMAL) {
       const r = this.detectarPlano('B', cuadro, priori);
       if (r && (!salida.B || r.inliers > salida.B.inliers)) salida.B = r;
     }
@@ -151,16 +155,16 @@ export class Reconocedor {
     let mejor = null, mejorP = previa;
     if (previa) {
       mejor = probar(previa);
-      if (mejor && mejor.inliers >= MIN_INLIERS) return mejor;
+      if (mejor && mejor.inliers >= umbralFuerte(pl)) return mejor;
     }
     // 1b) vistas prioritarias (la que sirvió para el otro plano y la foto base a varias escalas)
     for (const ref of refPrior || []) {
-      if (mejor && mejor.inliers >= MIN_INLIERS) break;
+      if (mejor && mejor.inliers >= umbralFuerte(pl)) break;
       const v = vistas.find((p) => p.ref === ref && p !== previa);
       const r = v && probar(v);
       if (r && (!mejor || r.inliers > mejor.inliers)) { mejor = r; mejorP = v; }
     }
-    if (mejor && mejor.inliers >= MIN_INLIERS) { this.ultimo[pl] = mejorP; return mejor; }
+    if (mejor && mejor.inliers >= umbralFuerte(pl)) { this.ultimo[pl] = mejorP; return mejor; }
     // 2) búsqueda rápida entre todas las vistas con los puntos más fuertes
     const nq = Math.min(cuadro.n, GRUESO);
     const pun = vistas

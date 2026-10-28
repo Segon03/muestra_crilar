@@ -9,7 +9,7 @@ const FPS = Number(process.argv[2] || 15), CADA = Number(process.argv[3] || 4), 
 const W = 480, H = 854, TAM = W * H * 4;
 
 (async () => {
-  const { Reconocedor } = await import(path.join(raiz, 'src/vision.js'));
+  const { Reconocedor, umbralFuerte } = await import(path.join(raiz, 'src/vision.js'));
   const { Seguidor, Rastreo } = await import(path.join(raiz, 'src/seguimiento.js'));
   const { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, planoDe } = await import(path.join(raiz, 'src/geometria.js'));
   await new Promise((r) => { if (cv.Mat) r(); else cv.onRuntimeInitialized = r; });
@@ -54,7 +54,7 @@ const W = 480, H = 854, TAM = W * H * 4;
       // referencia: detección directa sobre este cuadro, sin seguimiento (como la Fase 2)
       rec.ultimo = { A: null, B: null };
       const d = rec.detectar(img);
-      medir(c, { A: d.A && d.A.inliers >= 15 ? d.A.H : null, B: d.B && d.B.inliers >= 15 ? d.B.H : null }, res.sin);
+      medir(c, { A: d.A && d.A.inliers >= umbralFuerte('A') ? d.A.H : null, B: d.B && d.B.inliers >= umbralFuerte('B') ? d.B.H : null }, res.sin);
     }
     if (prev) prev.delete();
     prev = gris; i++;

@@ -1,7 +1,7 @@
 // Seguimiento entre detecciones: flujo óptico Lucas-Kanade sobre los puntos que dieron la
 // homografía, más la lógica de qué detecciones se aceptan y cuándo se pierde un plano.
 import { multiplicar, cuadrilateroValido, proyectarCuadrilatero, distanciaHomografias, ESQUINAS } from './geometria.js';
-import { MIN_INLIERS, MIN_DEBIL } from './vision.js';
+import { umbralFuerte, MIN_DEBIL } from './vision.js';
 
 const MIN_PUNTOS = 10;          // por debajo de esto el plano se da por perdido
 const UMBRAL_PASO = 3.0;        // px, RANSAC de cada paso de seguimiento
@@ -135,7 +135,7 @@ export class Rastreo {
       }
       if (!this.plausible(pl, H, gris)) continue;
       const actual = this.planos[pl];
-      const fuerte = r.inliers >= MIN_INLIERS;
+      const fuerte = r.inliers >= umbralFuerte(pl);
       const coincide = actual && distanciaHomografias(pl, actual.H, H) < COMPATIBLE * this.ancho;
       if (fuerte || coincide) {
         this.planos[pl] = { H, pts, ref: r.ref, inliers: r.inliers, confirmado: true, desde: actual?.desde ?? ahora, vivo: ahora };

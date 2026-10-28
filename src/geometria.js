@@ -69,7 +69,7 @@ export function planoDe(id) {
 // Esquinas de cada plano sobre vitrina_base.jpg (1600x1200); sirven para comparar homografías.
 export const ESQUINAS = {
   A: [[352, 25], [1040, 25], [1040, 502], [352, 502]],
-  B: [[200, 640], [1380, 640], [1380, 1165], [195, 1165]],
+  B: [[270, 650], [830, 650], [830, 1100], [270, 1100]], // zona de las tarjetas: de cerca, el plano entero cruza el horizonte y deja de ser convexo
 };
 
 // Distancia media (px del cuadro) entre las esquinas de un plano proyectadas con dos homografías.
