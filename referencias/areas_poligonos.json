@@ -167,7 +167,7 @@
   ]
  },
  "mesa": {
-  "nota": "La mesa de madera (nido de avispa, nidos de barro y rama) está más baja que la plataforma blanca de las tarjetas, así que es otro plano. Sus puntos se registran contra la foto de referencia 'referencia' (no contra la foto base, que casi no tiene textura en la madera) y estos cuadriláteros están en las coordenadas de ESA foto (720x1280).",
+  "nota": "La mesa de madera (nido de avispa, nidos de barro y rama) está más baja que la plataforma blanca de las tarjetas, así que es otro plano. Sus puntos se registran contra la foto de referencia 'referencia' (no contra la foto base, que casi no tiene textura en la madera) y estos cuadriláteros están en las coordenadas de ESA foto (720x1280). La rama (11) es un paralelogramo angosto a lo largo del palo principal y no el rectángulo que envuelve palo y rama: ese rectángulo ocupa la mitad de la foto y, visto de costado, se estira y se superpone con otras áreas.",
   "referencia": "referencias/pruebas/foto7.jpeg",
   "zona": [
    [
@@ -226,20 +226,20 @@
    ],
    "11_rama_oncideres": [
     [
-     12,
-     548
+     56,
+     532
     ],
     [
-     368,
-     548
+     399,
+     1045
     ],
     [
-     368,
-     1205
+     325,
+     1095
     ],
     [
-     12,
-     1205
+     -18,
+     582
     ]
    ]
   }

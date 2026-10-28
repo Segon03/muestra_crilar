@@ -1,8 +1,8 @@
 // Reconocimiento de la vitrina con OpenCV.js: AKAZE sobre el cuadro reducido, emparejamiento
 // contra el banco de referencias (precalculado con tools/exportar_banco.py) y homografía robusta.
 import { emparejar, contarBuenos } from './emparejar.js';
-import { multiplicar } from './geometria.js';
-import { NCC_MIN } from './verificacion.js';
+import { multiplicar, ESQUINAS } from './geometria.js';
+import { NCC_MIN, CALIDEZ_MIN_C, calidezZona } from './verificacion.js';
 
 export const MIN_INLIERS = 15;      // criterio del plan para dar un plano por reconocido
 export const MIN_B = 20;            // la base se confunde más (paneles parecidos entre sí): pide más coincidencias para darse por segura
@@ -53,7 +53,8 @@ function recortar(c, m) {
 }
 
 // Coincidencias necesarias para dar un plano por reconocido sin esperar confirmación.
-export const umbralFuerte = (pl) => (pl === 'A' ? MIN_INLIERS : MIN_B);
+export const MIN_C = 20;            // la mesa se confunde con las tarjetas con pocas coincidencias: pide más
+export const umbralFuerte = (pl) => (pl === 'A' ? MIN_INLIERS : pl === 'C' ? MIN_C : MIN_B);
 
 export class Reconocedor {
   constructor(cv, banco) {
@@ -130,13 +131,13 @@ export class Reconocedor {
   detectar(imageData) {
     const cuadro = this.describir(imageData);
     try {
-      return this.detectarCuadro(cuadro);
+      return this.detectarCuadro(cuadro, imageData);
     } finally {
       cuadro.gris.delete();
     }
   }
 
-  detectarCuadro(cuadro) {
+  detectarCuadro(cuadro, imageData) {
     const salida = { A: null, B: null, C: null, puntos: cuadro.pts, n: cuadro.n };
     const normal = recortar(cuadro, PUNTOS_NORMAL);
     salida.A = this.detectarPlano('A', normal, null);
@@ -155,9 +156,19 @@ export class Reconocedor {
     const refB = salida.B ? salida.B.ref : refA;
     const prioriC = [...new Set([REF_MESA, refB, refA].filter(Boolean))];
     salida.C = this.detectarPlano('C', normal, prioriC);
-    if ((!salida.C || salida.C.inliers < MIN_B) && cuadro.n > PUNTOS_NORMAL) {
+    if ((!salida.C || salida.C.inliers < MIN_C) && cuadro.n > PUNTOS_NORMAL) {
       const r = this.detectarPlano('C', cuadro, prioriC);
       if (r && (!salida.C || r.inliers > salida.C.inliers)) salida.C = r;
+    }
+    // La zona de la mesa tiene que verse cálida (madera); si es blanca, la alineación cayó sobre las tarjetas.
+    if (salida.C && imageData) {
+      const z = calidezZona(this.cv, imageData, salida.C.H, ESQUINAS.C);
+      salida.C.calidez = z ? z.calidez : null;
+      if (z && z.calidez < CALIDEZ_MIN_C) {
+        this.ultimo.C = null;
+        (salida.rechazadas = salida.rechazadas || {}).C = { inliers: salida.C.inliers, ncc: z.calidez, motivo: 'calidez' };
+        salida.C = null;
+      }
     }
     // Comprobación de la base y de la mesa: si los bordes no coinciden con los de la foto base, la
     // alineación está corrida (paneles repetidos) y se descarta aunque tenga muchas coincidencias.

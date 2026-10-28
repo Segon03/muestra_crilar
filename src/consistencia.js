@@ -28,3 +28,20 @@ export function solapeMesaConTarjetas(areas, H, ancho, alto) {
   }
   return peor;
 }
+
+// Anisotropía de la proyección de un cuadrilátero: cuánto se estira en una dirección respecto de la otra.
+// De costado y de lejos el plano de la mesa se estira muchísimo y los recuadros se vuelven enormes e
+// inservibles; por encima de este límite el recuadro no se dibuja.
+export const ANISOTROPIA_MAX = 6;
+export function anisotropia(qBase, qProy) {
+  const lado = (q, i) => Math.hypot(q[(i + 1) % 4][0] - q[i][0], q[(i + 1) % 4][1] - q[i][1]);
+  const sx = (lado(qProy, 0) + lado(qProy, 2)) / (lado(qBase, 0) + lado(qBase, 2));
+  const sy = (lado(qProy, 1) + lado(qProy, 3)) / (lado(qBase, 1) + lado(qBase, 3));
+  if (!(sx > 0) || !(sy > 0)) return Infinity;
+  return Math.max(sx / sy, sy / sx);
+}
+
+// Tamaño máximo de un recuadro de la mesa en "tarjetas" (raíz del área sobre raíz del área de la tarjeta de
+// Himenópteros ya proyectada). En vistas correctas el nido y la rama miden hasta ~3 tarjetas; mucho más es
+// una alineación de la mesa estirada o equivocada.
+export const TAMANO_MAX = 4;

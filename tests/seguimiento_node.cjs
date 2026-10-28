@@ -33,19 +33,40 @@ const W = 480, H = 854, TAM = W * H * 4;
   const ff = spawn('ffmpeg', ['-v', 'error', '-i', path.join(raiz, 'referencias/pruebas/video_muestra2.mp4'), '-vf', `fps=${FPS}`, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-']);
   let resto = Buffer.alloc(0), i = 0, prev = null, pendientes = [];
   const res = { seg: [], sin: [] };
-  const { solapeMesaConTarjetas, SOLAPE_MAX } = await import(path.join(raiz, 'src/consistencia.js'));
+  const { calcularQuads } = await import(path.join(raiz, 'src/areas.js'));
+  const { interseccionConvexa, areaPoligono } = await import(path.join(raiz, 'src/geometria.js'));
   const medir = (c, hom, destino) => {
-    let homografias = hom;
-    if (hom.C && hom.B && solapeMesaConTarjetas(areas, hom, W, H) > SOLAPE_MAX) homografias = { ...hom, C: null }; // como la app
+    const homografias = hom;
+    const { quads } = calcularQuads(areas, homografias, W, H * 1);
     for (const a of areas) {
       const g = c.cajas[a.id]; if (!g) continue;
-      let Hh = homografias[a.plano], base = a.quad;
-      if (!Hh && a.plano === 'C' && homografias.B) { Hh = homografias.B; base = a.quadAprox; } // como la app: mesa sin reconocer -> base
-      let v = 0, proy = 0;
-      if (Hh && base) { const q = proyectarCuadrilatero(Hh, base); if (cuadrilateroValido(q, W, H)) { proy = 1; const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]); v = iou([Math.max(0, Math.min(...xs)), Math.max(0, Math.min(...ys)), Math.min(W, Math.max(...xs)), Math.min(H, Math.max(...ys))], g); } }
+      const r = quads[a.id]; let v = 0, proy = 0;
+      if (r) { proy = 1; const xs = r.q.map((p) => p[0]), ys = r.q.map((p) => p[1]); v = iou([Math.max(0, Math.min(...xs)), Math.max(0, Math.min(...ys)), Math.min(W, Math.max(...xs)), Math.min(H, Math.max(...ys))], g); }
       destino.push({ v, proy, id: a.id });
     }
   };
+  // coherencia visual en TODOS los cuadros: cuánto se superponen las áreas de la mesa con las tarjetas
+  const vis = { cuadros: 0, conMesa: 0, solapeMedio: 0, aprox: 0, mesa: 0, areaRama: [], descartes: 0 };
+  const disc = [];
+  const medirVisual = (hom) => {
+    if (hom.B && hom.C) {
+      const card = areas.find((a) => a.id.startsWith('04')); const qc = proyectarCuadrilatero(hom.B, card.quad); const esc = Math.sqrt(areaPoligono(qc));
+      for (const a of areas) { if (a.plano !== 'C' || !a.quadAprox) continue; const qb = proyectarCuadrilatero(hom.B, a.quadAprox), qq = proyectarCuadrilatero(hom.C, a.quad); const cen = (q) => [q.reduce((s, p) => s + p[0], 0) / 4, q.reduce((s, p) => s + p[1], 0) / 4]; const [xb, yb] = cen(qb), [xq, yq] = cen(qq); disc.push({ id: a.id.slice(0, 2), d: Math.sqrt(areaPoligono(qq)) / esc }); }
+    }
+    const { quads, descartarC } = calcularQuads(areas, hom, W, H);
+    if (descartarC) vis.descartes++;
+    const tarjetas = areas.filter((a) => a.plano === 'B' && quads[a.id]).map((a) => quads[a.id].q);
+    for (const a of areas) {
+      if (a.plano !== 'C' || !quads[a.id]) continue;
+      vis.mesa++; if (quads[a.id].aprox) vis.aprox++;
+      const q = quads[a.id].q; const ar = areaPoligono(q);
+      let t = 0; for (const b2 of tarjetas) t += areaPoligono(interseccionConvexa(q, b2));
+      vis.conMesa++; vis.solapeMedio += t / ar;
+      if (a.id.startsWith('11')) vis.areaRama.push(ar / (W * H));
+    }
+    vis.cuadros++;
+  };
+  const rechazos = {}; const calRech = [], calAcep = []; let nC = 0, calMin = 9;
   let tTrack = 0, nTrack = 0, tDet = 0, nDet = 0;
   const procesar = (frame) => {
     const ahora = (i / FPS) * 1000;
@@ -53,9 +74,10 @@ const W = 480, H = 854, TAM = W * H * 4;
     const gris = seg.gris(img);
     let t0 = Date.now();
     if (prev) ras.avanzar(prev, gris, ahora);
+    if (i % 5 === 0) medirVisual(ras.vigentes(ahora, 500));
     tTrack += Date.now() - t0; nTrack++;
     // detección: empieza en este cuadro y llega LAT cuadros después
-    if (i % CADA === 0) { t0 = Date.now(); const det = rec.detectar(img); tDet += Date.now() - t0; nDet++; pendientes.push({ llega: i + LAT, det, gris: gris.clone() }); }
+    if (i % CADA === 0) { t0 = Date.now(); const det = rec.detectar(img); if (det.rechazadas) for (const k of Object.keys(det.rechazadas)) { rechazos[k] = (rechazos[k] || 0) + 1; if (k === 'C') calRech.push(+det.rechazadas.C.ncc.toFixed(3)); } if (det.C) { nC++; if (det.C.calidez != null) { calMin = Math.min(calMin, det.C.calidez); calAcep.push(+det.C.calidez.toFixed(3)); } } tDet += Date.now() - t0; nDet++; pendientes.push({ llega: i + LAT, det, gris: gris.clone() }); }
     for (const p of pendientes.filter((p) => p.llega <= i)) { ras.recibir(p.det, p.gris, gris, ahora); p.gris.delete(); }
     pendientes = pendientes.filter((p) => p.llega > i);
     const c = gtPorCuadro.get(i);
@@ -77,6 +99,10 @@ const W = 480, H = 854, TAM = W * H * 4;
   await new Promise((r) => ff.on('close', r));
   const resumen = (v) => `proyectadas ${(100 * v.filter((x) => x.proy).length / v.length).toFixed(1)}%  IoU medio ${(v.reduce((s, x) => s + x.v, 0) / v.length).toFixed(2)}  IoU>=0.5 ${(100 * v.filter((x) => x.v >= 0.5).length / v.length).toFixed(1)}%  (${v.length} cajas)`;
   { const por = {}; for (const x of res.seg) (por[x.id] = por[x.id] || []).push(x); const f = Object.keys(por).sort().map((id) => { const pr = por[id].filter((x) => x.proy); return `${id.slice(0, 2)}:${pr.length ? (pr.reduce((a, x) => a + x.v, 0) / pr.length).toFixed(2) : '-'}(${pr.length}/${por[id].length})`; }); console.log('IoU medio por área (cuando se proyecta):', f.join('  ')); }
+  { const ar = vis.areaRama.sort((x, y) => x - y); console.log(`mesa dibujada ${vis.mesa} veces (${vis.aprox} punteadas, ${vis.descartes} cuadros con la mesa descartada); superposición media con tarjetas ${(100 * vis.solapeMedio / Math.max(1, vis.conMesa)).toFixed(1)} %; recuadro de la rama: mediana ${(100 * ar[ar.length >> 1]).toFixed(1)} % del cuadro, p90 ${(100 * ar[Math.floor(ar.length * 0.9)]).toFixed(1)} %`); }
+  { const por = {}; for (const x of disc) (por[x.id] = por[x.id] || []).push(x.d); for (const id of Object.keys(por)) { const v = por[id].sort((a, b) => a - b); console.log(`tamaño del recuadro de la mesa / tamaño de una tarjeta, área ${id}: n=${v.length} mediana ${v[v.length >> 1].toFixed(2)} p90 ${v[Math.floor(v.length * 0.9)].toFixed(2)} máx ${v[v.length - 1].toFixed(2)}`); } }
+  console.log('calidez rechazadas:', calRech.sort((a, b) => a - b).join(' '), '\ncalidez aceptadas (menores):', calAcep.sort((a, b) => a - b).slice(0, 12).join(' '));
+  console.log(`detecciones rechazadas por verificación: ${JSON.stringify(rechazos)}; mesa aceptada ${nC} veces, calidez mínima aceptada ${calMin.toFixed(3)}`);
   console.log(`cuadros: ${i}  fps simulados: ${FPS}  detección cada ${CADA}, latencia ${LAT}`);
   console.log('con seguimiento :', resumen(res.seg));
   console.log('detección sola  :', resumen(res.sin));
