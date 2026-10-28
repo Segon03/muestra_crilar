@@ -73,7 +73,7 @@ const W = 480, H = 854, TAM = W * H * 4;
   ff.stderr.on('data', (d) => process.stderr.write(d));
   await new Promise((r) => ff.on('close', r));
   const resumen = (v) => `proyectadas ${(100 * v.filter((x) => x.proy).length / v.length).toFixed(1)}%  IoU medio ${(v.reduce((s, x) => s + x.v, 0) / v.length).toFixed(2)}  IoU>=0.5 ${(100 * v.filter((x) => x.v >= 0.5).length / v.length).toFixed(1)}%  (${v.length} cajas)`;
-  { const por = {}; for (const x of res.seg) (por[x.id] = por[x.id] || []).push(x); const f = Object.keys(por).sort().map((id) => { const pr = por[id].filter((x) => x.proy); return `${id.slice(0, 2)}:${pr.length ? (pr.reduce((a, x) => a + x.v, 0) / pr.length).toFixed(2) : '-'}`; }); console.log('IoU medio por área (cuando se proyecta):', f.join('  ')); }
+  { const por = {}; for (const x of res.seg) (por[x.id] = por[x.id] || []).push(x); const f = Object.keys(por).sort().map((id) => { const pr = por[id].filter((x) => x.proy); return `${id.slice(0, 2)}:${pr.length ? (pr.reduce((a, x) => a + x.v, 0) / pr.length).toFixed(2) : '-'}(${pr.length}/${por[id].length})`; }); console.log('IoU medio por área (cuando se proyecta):', f.join('  ')); }
   console.log(`cuadros: ${i}  fps simulados: ${FPS}  detección cada ${CADA}, latencia ${LAT}`);
   console.log('con seguimiento :', resumen(res.seg));
   console.log('detección sola  :', resumen(res.sin));

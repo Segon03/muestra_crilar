@@ -21,9 +21,12 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
 import nucleo as n
+import verificar_base
 
 SALIDA = os.path.join(n.REF, "banco")
 MIN_INL_REG = 30        # inliers para aceptar un registro
+MIN_INL_REG_B = 18      # la plataforma de las tarjetas tiene poca textura: se acepta con menos, pero hay que pasar la comprobación de bordes
+NCC_REG_B = 0.25        # parecido de bordes mínimo con la foto base para aceptar un registro de B
 ANCHO_FEAT = 960        # ancho máximo para calcular puntos
 VIDEO = os.path.join(n.REF, "pruebas", "video_muestra.mp4")
 FOTOS = [os.path.join(n.REF, "pruebas", f"foto_angulo_0{i}.jpg") for i in (1, 2, 3)] + \
@@ -98,6 +101,7 @@ class Anclas:
     def registrar_candidato(self, img):
         """Intenta registrar img contra las anclas. Devuelve {plano: (H_base_a_img, inliers, ancla)}."""
         pts, d = feats(img)
+        gris = n.a_gris(img)
         tam = (img.shape[1], img.shape[0])
         mejor = {}
         for e in self.lista:
@@ -106,11 +110,16 @@ class Anclas:
                     continue
                 pa, da = e["f"][pl]
                 H, ni = registrar(pa, da, pts, d)
-                if H is None or ni < MIN_INL_REG:
+                minimo = MIN_INL_REG_B if pl == "B" else MIN_INL_REG
+                if H is None or ni < minimo:
                     continue
                 Hb = H @ e["H"][pl]
                 if not plausible(Hb, poli, tam):
                     continue
+                if pl == "B":  # control de calidad: la alineación de la base tiene que parecerse a la foto base
+                    ncc = verificar_base.puntaje(gris, Hb)
+                    if ncc is not None and ncc < NCC_REG_B:
+                        continue
                 if pl not in mejor or mejor[pl][1] < ni:
                     mejor[pl] = (Hb, ni, e["nombre"])
         return mejor
