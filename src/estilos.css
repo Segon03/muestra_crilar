@@ -28,6 +28,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color:
 .area-nombre { margin: 0; padding: 5px 16px; border-radius: 999px; font-size: .95rem; font-weight: 800; letter-spacing: .28em; text-indent: .28em;
   color: #1a1033; background: linear-gradient(90deg, #7be0ff, #b79bff, #ff9ccf); }
 #inicio .descripcion { margin: 0; color: #d6dcf0; line-height: 1.5; }
+#inicio .aviso { margin: 0; font-size: .8rem; color: #9aa6c4; line-height: 1.4; }
 #abrir:not(:disabled) { animation: pulso 2.2s ease-in-out infinite; }
 @keyframes pulso { 0%, 100% { box-shadow: 0 0 0 0 rgba(123, 216, 143, .55); } 50% { box-shadow: 0 0 0 12px rgba(123, 216, 143, 0); } }
 @media (prefers-reduced-motion: reduce) { .insecto .ala, #abrir { animation: none !important; } }

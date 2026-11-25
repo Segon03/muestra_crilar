@@ -12,6 +12,8 @@ import { cajaACuadrilatero, proyectarCuadrilatero, cuadrilateroValido, areaPolig
 const params = new URLSearchParams(location.search);
 const DEMO = params.has('demo');
 const DEBUG = params.has('debug');
+// Estadísticas de uso anónimas (ver PLAN_ESTADISTICAS.md). Se cargan aparte para que un fallo no pueda detener la app.
+import('./estadisticas.js').then((m) => m.iniciarEstadisticas({ demo: DEMO, debug: DEBUG })).catch(() => {});
 const PERDIDA_MS = 500; // se ocultan los recuadros de un plano si se pierde por más de esto
 const ANCHO_TRABAJO = Number(params.get('ancho')) || 640; // ancho del cuadro sobre el que se detecta y se sigue
 const SUAVIZADO = 0.55; // peso del valor nuevo en el suavizado de esquinas (1 = sin suavizar)

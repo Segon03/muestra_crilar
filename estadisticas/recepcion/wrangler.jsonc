@@ -1,0 +1,18 @@
+{
+  // Worker público que recibe los avisos de la app. Solo escribe en la base.
+  "name": "muestra-crilar-recepcion",
+  "main": "src/index.js",
+  "compatibility_date": "2025-01-01",
+  "vars": {
+    // Única página autorizada a enviar avisos.
+    "ORIGEN_PERMITIDO": "https://segon03.github.io"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "muestra-crilar-estadisticas",
+      // No es un secreto. Se reemplaza por el ID de la base creada en Cloudflare.
+      "database_id": "REEMPLAZAR_POR_EL_ID_DE_LA_BASE"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Estadísticas de uso · Muestra CRILAR</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <header class="encabezado">
+    <div>
+      <h1>Estadísticas de uso</h1>
+      <p class="sub">Muestra interactiva del CRILAR · <span id="rango-texto">Cargando…</span></p>
+    </div>
+    <div class="vivo" id="vivo" hidden title="Visitantes con actividad en el último minuto"><span class="punto"></span><b id="vivo-n">0</b> conectados ahora</div>
+  </header>
+
+  <section class="controles" aria-label="Controles">
+    <div class="grupo" role="group" aria-label="Período">
+      <button type="button" data-rango="hoy">Hoy</button>
+      <button type="button" data-rango="7d">Últimos 7 días</button>
+      <button type="button" data-rango="evento">Noche de los Museos</button>
+      <button type="button" data-rango="todo">Todo</button>
+    </div>
+    <div class="grupo fechas">
+      <label>Desde <input type="datetime-local" id="desde"></label>
+      <label>Hasta <input type="datetime-local" id="hasta"></label>
+      <button type="button" id="aplicar">Aplicar</button>
+    </div>
+    <div class="grupo acciones">
+      <button type="button" id="csv" class="sec">Descargar CSV</button>
+      <button type="button" id="imprimir" class="sec">Informe (PDF)</button>
+    </div>
+  </section>
+
+  <p id="mensaje" class="mensaje" hidden></p>
+
+  <main id="contenido">
+    <section class="kpis" aria-label="Indicadores">
+      <div class="kpi"><span>Ingresos</span><b id="k-ingresos">–</b><small>visitas a la página</small></div>
+      <div class="kpi"><span>Visitantes únicos</span><b id="k-unicos">–</b><small id="k-recurrentes">aproximado</small></div>
+      <div class="kpi"><span>Permanencia mediana</span><b id="k-mediana">–</b><small id="k-promedio">promedio –</small></div>
+      <div class="kpi"><span>Se quedan más de 1 min</span><b id="k-mas1">–</b><small>de las visitas</small></div>
+      <div class="kpi"><span>Hora pico</span><b id="k-pico">–</b><small id="k-pico-n">ingresos</small></div>
+    </section>
+
+    <section class="tarjeta"><h2>Ingresos por hora del día</h2><div id="g-hora" class="barras horas"></div></section>
+    <section class="tarjeta" id="t-dia"><h2>Ingresos por día</h2><div id="g-dia" class="barras dias"></div></section>
+    <section class="tarjeta"><h2>Tiempo de permanencia</h2><div id="g-tramo" class="barras h"></div></section>
+    <div class="dos">
+      <section class="tarjeta"><h2>Provincias</h2><div id="g-prov" class="barras h"></div></section>
+      <section class="tarjeta"><h2>Países</h2><div id="g-pais" class="barras h"></div></section>
+    </div>
+    <section class="tarjeta"><h2>Día de la semana y hora</h2><div id="g-calor" class="calor"></div></section>
+
+    <p class="nota">Las horas son de Argentina. La ubicación se calcula por la conexión y es aproximada: puede variar con VPN, datos móviles o el wifi del instituto. Los visitantes únicos se cuentan por un identificador anónimo guardado en cada celular, así que si alguien borra los datos del navegador o usa otro equipo se cuenta de nuevo. La permanencia tiene un tope de una hora por visita.</p>
+  </main>
+
+  <script type="module" src="panel.js"></script>
+</body>
+</html>
