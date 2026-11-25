@@ -2,7 +2,7 @@
 
 - Leer PLAN_TAREAS.md completo antes de empezar. Seguir las fases en orden.
 - Idioma: español para la interfaz, los comentarios y los mensajes de commit.
-- Sitio estático sin paso de compilación y sin node_modules. Librerías de terceros copiadas en `vendor/` con versión fija.
+- Sitio estático sin paso de compilación y sin node_modules. Librerías de terceros copiadas en `vendor/` con versión fija. La excepción es la carpeta `estadisticas/` (Worker de Cloudflare), que tiene su propia configuración; ver PLAN_ESTADISTICAS.md.
 - El reconocimiento se hace sobre el video de la cámara en vivo. Las imágenes de `referencias/` son solo referencia.
 - `referencias/pruebas/video_muestra2.mp4` es solo para evaluar. No usarlo para armar el banco de referencias ni para entrenar.
 - No subir videos pesados: comprimirlos antes (idealmente menos de 10 MB cada uno).
